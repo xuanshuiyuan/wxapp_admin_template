@@ -96,7 +96,7 @@ node .claude/scripts/check_system.mjs   # 若改了 .claude/ 系统
 | 3 | 修 bug 没补 `bug_history.md` | 同一 bug 会二次出现 |
 | 4 | 忘了在 `pages.json` 登记新页 | 页面打不开 |
 | 5 | 忘了在 `api/index.js` 加 export | 引入报错 |
-| 6 | 新页漏挂全局 `<app-loading>` / `<app-modal>` | 静默降级 / 弹窗不弹（BUG-003/004） |
+| 6 | 新页漏挂全局 `<app-loading>` / `<app-modal>` | 静默降级 / 弹窗不弹（真实事故：漏挂全局组件） |
 | 7 | 类名撞 ColorUI | 真机布局坏（BUG-001） |
 | 8 | 改了 C 端共用文件却没标注 | 双端不一致 |
 | 9 | 没写 why 注释 | 可维护性下降，reviewer 会提 |

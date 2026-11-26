@@ -121,9 +121,9 @@ api/<域>.js  →  curl.get / post / upload
    **首屏页 `onShow`** 负责（无 token 自动补 + `40005` 自动重登重放），用户无感。
 2. **不是「登录即注册」**：后端不为新微信建账号，没绑过回 `58001`
    —— 那是**流程分支不是错误** → 清栈跳 `pages/bind`（手机号 + 密码绑定）。
-   > ⚠️ `58001–58006` 是**模板建议给新项目自建 RBAC 的码**，不是后端模板既有契约
-   > （`go_project_template` 的 `err_code.go` 里没有这一段）。新项目自建登录/绑定时
-   > 可以沿用、也可以换成自己的号段；换的话同步 `config/dict.js` + `services/session.js` + `guards.js`。
+   > ★ `58001–58006` 是**本项目约定的 RBAC 标准码**（用户 2026-11-26 拍板）。
+   > 后端模板 `go_project_template` 未内置这一段，新项目自建登录/绑定时**应沿用同一组码**
+   > 并在后端落同一组常量；确需换号段时必须同步 `config/dict.js` + `services/session.js` + `guards.js`。
 3. 绑定成功**不必再调登录接口**（绑定响应与登录完全相同）。
 4. **没有独立登录页**：登录是静默的，绑定页承接首次使用。
 5. 会话结构是 `admin_info`（身份主键 `admin_info.id` = `userid` 头）；
@@ -191,12 +191,13 @@ config/theme.js         theme.scss 的 JS 镜像（给 uview 组件 color prop �
 └── src/
     ├── main.js        入口（★ 两条副作用 import 不可删：services/session · services/guards）
     ├── App.vue        根组件（样式入口；★ onLaunch 刻意不做登录）
-    ├── pages.json     路由 + easycom + globalStyle（新页面必须登记）
+    ├── pages.json     路由 + easycom + globalStyle + subPackages/preloadRule（新页面必须登记）
     ├── manifest.json  平台配置（appid 占位 REPLACE_WX_APPID）
     ├── uni.scss       SCSS 注入入口（把 theme.scss 注入每个编译块）
     ├── common/css/    main.css(ColorUI) · base.scss · theme.scss ★ token 唯一真源
     ├── styles/        scaffold.scss（版式块 + 流光玻璃视觉语言）
     ├── components/    app-* 跨页通用件（easycom 免 import）
+    ├── pages-sub/     分包（当前：common/region-picker + 区划表；按需下载）
     ├── composables/   跨页能力；★ **页面私有**的放 pages/<模块>/composables/
     ├── services/      基础设施。★ 唯一入口：pageAccess（准入判据）· listDirty（返回刷新）
     │                  · pickPage/fieldEditor/regionPicker（跳页取值）· uploader（端差异收口）

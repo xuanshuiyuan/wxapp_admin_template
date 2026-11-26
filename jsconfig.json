@@ -20,6 +20,7 @@
 		"src/composables/**/*",
 		"src/config/**/*",
 		"src/pages/**/*",
+		"src/pages-sub/**/*",
 		"src/services/**/*",
 		"src/store/**/*",
 		"src/utils/**/*"

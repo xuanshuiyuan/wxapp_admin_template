@@ -15,6 +15,9 @@
 //                       注册页面必须一一对应（2026-10-27 加：页面清单的真相源在配置里，
 //                       两处不同步会让页面**跳不过去**）
 //   8. ★ 脏标记一致性 —— 分页列表进子页必须参与「返回刷新」脏标记（v1.2.2 加）
+//   9. ★ 文档漂移    —— `.claude/**` 里的内部路径引用必须存在；
+//                        关键陈旧值黑名单（错误端口 / 已删文件 / 悬空编号）不得出现
+//                        （复评 r2 建议：check_system 通过 ≠ 文档自洽）
 //
 // ⚠️ 原先的「rules/ ↔ rule-skill 按日期比对」已于 2026-11-16 **删除**：
 //    `.claude/rules/` 整个目录已迁入 rule-skill 并删除（删前逐条审计过缺口），
@@ -732,7 +735,58 @@ const workflowNames = await checkWorkflows();
 await checkSymbolExistence();
 await checkPageRegistry();
 await checkListRefresh();
+// ── 9. ★ 文档漂移：内部路径引用存在性 + 关键陈旧值黑名单 ───────────────
+// 为什么有这条：check_system 原先只查符号 / 路由 / 结构，查不到「文档引用的文件已删除」
+// 与「示例里还写着旧端口 / 已删编号」—— 这类漂移不会让构建失败，只会误导下一个接手的人。
+// 只扫 `.claude/`（排除 versions/ 历史报告），且只认**明确内部前缀**，避免误伤业务文档里的相对路径。
+const STALE_VALUES = [
+	[/localhost:15200/, '旧端口 15200（本仓开发端口是 15000）'],
+	[/\brule-style-css\b/, '旧 skill 名 rule-style-css（现为 rule-style-tokens）'],
+	[/modules\/login/, '引用已删除的 modules/login'],
+	[/memory\/api_conventions\.md/, '引用已删除的 memory/api_conventions.md'],
+	[/memory\/business_rules\.md/, '引用已删除的 memory/business_rules.md'],
+	[/\bBUG-00[2-7]\b/, '引用了不存在的 BUG-00x 编号（本仓只有 BUG-001/008）'],
+	[/\bK-0[1237]\b/, '引用了不存在的 K-0x 编号'],
+	[/PAGE_LEDGER_/, '引用已删除的 PAGE_LEDGER_* 常量']
+];
+
+const DOC_PATH_RE = /`((?:\.claude\/)?(?:memory|skills|agents|workflows|templates|checks|prompts|tools)\/[^`\n]+)`/g;
+
+async function checkDocs() {
+	const files = (await walk(CLAUDE_DIR)).filter(
+		(f) => /\.(md|yaml|json)$/.test(f) && !rel(f).includes('project-meta/versions/')
+	);
+	let scanned = 0;
+	let links = 0;
+	for (const f of files) {
+		const text = await read(f);
+		if (!text) continue;
+		scanned += 1;
+
+		text.split('\n').forEach((line, i) => {
+			for (const [re, msg] of STALE_VALUES) {
+				if (!re.test(line)) continue;
+				// 带「旧名 / 已删 / 不存在 / 历史」的句子是**说明性提及**（来源、迁移记录），不是漂移
+				if (/旧名|已删|不存在|历史|迁移/.test(line)) continue;
+				err('文档漂移', `${rel(f)}:${i + 1} ${msg}`);
+			}
+		});
+
+		for (const m of text.matchAll(DOC_PATH_RE)) {
+			let p = m[1];
+			// 占位 / 通配 / 版本号模板一律跳过（不是真实路径）
+			if (/[<>{}*]|vN|\$\{/.test(p)) continue;
+			p = p.replace(/[.,;:)]+$/, '').replace(/\/+$/, '');
+			const abs = p.startsWith('.claude/') ? join(ROOT, p) : join(CLAUDE_DIR, p);
+			links += 1;
+			if (!existsSync(abs)) err('文档漂移', `${rel(f)} 引用不存在的路径 ${p}`);
+		}
+	}
+	info.push(`文档漂移：扫描 ${scanned} 个文件，检查 ${links} 个内部引用`);
+}
+
 await checkStructure();
+await checkDocs();
 await checkCrossReference(agentNames, workflowNames);
 
 const report = {

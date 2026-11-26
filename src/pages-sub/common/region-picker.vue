@@ -75,7 +75,7 @@ import { emitRegionResult } from '@/services/regionPicker';
 import { usePageGuard } from '@/composables/usePageGuard';
 import { PAGE_REGION_PICKER } from '@/config/access';
 import { APP_VERSION_TEXT } from '@/config/app';
-import { PROVINCE_CITY_DISTRICTS_CODE } from '@/config/region-code';
+import { PROVINCE_CITY_DISTRICTS_CODE } from './region-code';
 import { safeDecodeURIComponent } from '@/utils/text';
 
 const PROVINCES = PROVINCE_CITY_DISTRICTS_CODE;

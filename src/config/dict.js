@@ -23,7 +23,7 @@ export const CODE_NO_PERMISSION = 40102;
 // 频控（上传 / 短信等）
 export const CODE_TOO_FREQUENT = 40205;
 
-// —— 账号体系（新项目自建 RBAC 时可直接沿用这组码，也可改成自己的） ——
+// —— 账号体系（本项目标准 RBAC 码；后端模板未内置，新项目应沿用同一组） ——
 // ★ 该微信尚未绑定管理员账号。**不是错误，是流程分支** → 去绑定页（services/session.js）
 export const CODE_ADMIN_NOT_BOUND = 58001;
 // 账号或密码错误：后端**故意不区分**「手机号不存在」与「密码错」（防账号枚举），

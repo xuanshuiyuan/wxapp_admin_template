@@ -39,7 +39,7 @@ description: 在本工程写界面 UI、要选组件（按钮/输入/弹窗/列�
 - ❌ **弹层 / 底部抽屉里禁止放 `input` / `textarea`**（含 `u-input` / `u--input` / `u-search` / `u-number-box`）。
   选容器前先问一句「**会不会弹软键盘**」：
   · **会弹键盘 → 整屏页承担**：多字段表单 / 筛选点行 → `pages/common/field-editor`
-    （`services/fieldEditor.editField`）、省市区联动 → `pages/common/region-picker`；
+    （`services/fieldEditor.editField`）、省市区联动 → `pages-sub/common/region-picker`（分包，按需下载）；
     **单字段的独立页就在页内直接写 input，不再二次跳**（`pages/common/field-editor` 即此形态）。
     理由：微信 input 默认 `adjust-position=true`，键盘弹起会把 `position: fixed` 的弹层整个顶上去，
     底部输入框被键盘盖住、弹层高度还会跳变 —— 逐端调避让的成本远高于整页承载。

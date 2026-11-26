@@ -79,7 +79,7 @@ src/
     endpoints.js  接口 URL 唯一登记表
     env.js        .env 读取与按端分流
     demo.js       演示会话（DEMO_MODE=true 时使用）
-    region-code.js 省市区表（可选，region-picker 消费）
+    （区划表已随 region-picker 移入 pages-sub，不在 config/）
     theme.js      theme.scss 的 JS 镜像（u-icon color 这类 prop 用）
   composables/    useList · useModal · usePullRefresh · useServerClock · useAdminHome · usePageGuard
   components/     app-*（easycom 免 import）：brand / modal / loading / navbar / refresher /
@@ -88,7 +88,8 @@ src/
     admin-home/   工作台（权限菜单 + 冷启动判定态 + 下拉刷新）
     bind/         绑定管理员账号（stub 先例，UI 与流程完整）
     demo/         演示页（请求链路上手 + 上传上手 + 列表骨架 + 跳页取值）
-    common/       field-editor · region-picker（跳页取值工具页）
+    common/       field-editor（跳页取值工具页）
+  pages-sub/      分包：common/region-picker + 区划表（约 160KB，按需下载）
   store/          user / modal / loading（都是视图，真相源在 storage 与服务端）
   styles/scaffold.scss  版式块 + 流光玻璃视觉语言（极光 / 玻璃卡 / 宫格 / 按钮…）
   common/css/theme.scss ★ 样式 token 唯一值源（换主色只改这里 + config/theme.js）
@@ -251,6 +252,7 @@ npm run build:mp-weixin && npm run check:release
    该微信没绑过管理员时登录回 `58001`（流程分支 → 前端去绑定页）。
 3. **权限点**：`permission` 是前端显隐 / 准入的唯一判据。建议按「每个操作一个码」下发，
    并与 `config/access.js` 一一对应；后端仍按路径校验，前端只是体验层。
+   登录/绑定错误码沿用本项目标准号段 `58001–58006`（后端模板未内置，需在后端落同一组常量）。
 
 ### 5.3 上传
 

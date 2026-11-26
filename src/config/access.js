@@ -60,8 +60,9 @@ export const PAGE_FIELD_EDITOR = '/pages/common/field-editor';
 /**
  * 省 / 市 / 区选择页：回传「名称 + 6 位 code」，机制同 fieldEditor。
  * 与字段编辑页同属「跳页取值」工具页，准入完全跟随来源页，故 PAGES 里不配权限门。
+ * ⚠️ 本页在**分包** `pages-sub`（连同 160KB 的区划表）：不用地区选择的项目删掉整个分包即可。
  */
-export const PAGE_REGION_PICKER = '/pages/common/region-picker';
+export const PAGE_REGION_PICKER = '/pages-sub/common/region-picker';
 
 // ---------------------------------------------------------------------------
 // ② 子入口 / 页内操作按钮

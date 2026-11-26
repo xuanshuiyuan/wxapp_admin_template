@@ -72,22 +72,32 @@
 				"backgroundColor": "#FAFAFE",
 				"backgroundColorTop": "#FAFAFE"
 			}
-		},
-		{
-			// 省 / 市 / 区选择页：页面级滚动（picker-view 需要整屏高度）
-			"path": "pages/common/region-picker",
-			"style": {
-				"navigationStyle": "custom",
-				"navigationBarTitleText": "选择地区",
-				"navigationBarTextStyle": "black",
-				"backgroundColor": "#FAFAFE",
-				"backgroundColorTop": "#FAFAFE"
-			}
 		}
 	],
+	// 分包：省 / 市 / 区选择页连同约 160KB 区划表移出主包；
+	// 主包只在真正打开选择页时才下载它（进示例页 B 时预下载，避免点选择时白等）。
+	"subPackages": [
+		{
+			"root": "pages-sub",
+			"pages": [
+				{
+					"path": "common/region-picker",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "选择地区",
+						"navigationBarTextStyle": "black",
+						"backgroundColor": "#FAFAFE",
+						"backgroundColorTop": "#FAFAFE"
+					}
+				}
+			]
+		}
+	],
+	"preloadRule": {
+		"pages/demo/page-b": { "network": "all", "packages": ["pages-sub"] }
+	},
 	// ⚠️ **未开 tabBar**。将来要加：本文件加 tabBar 段（iconPath 需 static/tabbar/ 实体图标），
 	//    并同步 services/route.js 的 TAB_PAGES 数组 —— 漏改那里会让 route.to 走 navigateTo 跳 tab 页而失败。
-	// ⚠️ 将来加分包时：subPackages 段 + preloadRule 两处一起配。
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "管理端模板",

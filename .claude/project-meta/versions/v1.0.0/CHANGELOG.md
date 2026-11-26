@@ -60,15 +60,16 @@ CLAUDE/QUICK_START/current_sprint 的 `DEMO_MODE` 描述改为环境变量口径
 | 生产演示旁路 | `VITE_DEMO_MODE=true npm run build:mp-weixin` | ✅ 产物首行即 `throw`（启动阻断） |
 | 开发者工具 / 真机 | — | 未执行 |
 
-## 四、未处置 / 需用户拍板
+## 四、用户拍板后的落地（2026-11-26）
 
-1. **`5800x` 是否固化为公司 RBAC 标准码**（当前只在模板内建议，后端模板没有）。
-2. **`.claude` 全套是否保留**（13 rule + 10 agent + 4 workflow；评审认为对新人偏重）。
-3. **`region-code.js` 160KB** 是否移入分包 / 改成按需加载。
-4. **是否内置 tabBar 骨架**（当前无导航设计，按「不编造」留空）。
-5. **是否引入 vitest**（纯函数与请求策略可测；本轮未装依赖）。
-6. **后端 `POST /admin/upload` 控制器** 需要后端窗口实现（前端契约已固定为 `data.url`）。
-7. 评审建议的「`.claude` 链接 / 陈旧值自动检查」尚未实现（本轮人工清理；可作为 v1.1 项）。
+1. **`5800x` 定为公司标准 RBAC 码**：CLAUDE.md / dict.js / README 已按「标准」表述（后端模板未内置，新项目沿用同一组）。
+2. **`.claude` 全套保留**。
+3. **`region-code.js` 移入分包**：`pages/common/region-picker.vue` + 区划表 → `pages-sub/common/`；
+   `pages.json` 加 `subPackages` + demo/page-b 预下载；主包 1.4M / 分包 152K（构建实测）；K-100 关闭。
+4. tabBar：暂缓（无导航设计）。
+5. vitest：暂缓（接真实业务前再装）。
+6. **后端 `POST /admin/upload` 已派单**给后端窗口（契约 `data.url` + 40203/40204/40205/40001/60004），待回。
+7. **文档漂移自动检查已实现**：`check_system.mjs` 新增第 9 项（内部路径存在性 + 陈旧值黑名单，排除 versions/ 历史报告）。
 
 ## 五、评审
 

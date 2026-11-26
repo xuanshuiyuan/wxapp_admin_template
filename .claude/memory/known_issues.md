@@ -27,5 +27,5 @@
 
 | # | 项 |
 |---|---|
-| K-100 | 包体积：`config/region-code.js` 约 +160KB（主包）。不需要地区选择时删掉该文件与 `pages/common/region-picker` |
+| K-100 | ~~包体积：区划表 160KB 在主包~~ → 已移入分包 `pages-sub`（区划表与选择页同处，按需下载）；不用地区选择的项目删掉整个 `pages-sub` 即可 |
 | K-101 | 模板未装测试框架；`npm run verify:*` 只做构建校验，未跑真机 |

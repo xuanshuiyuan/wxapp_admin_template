@@ -2,8 +2,8 @@
 // 省 / 市 / 区选择页的跨页协作：打开选择页 + 结果回传。
 //
 // ★ 2026-11-10（v1.2.0）从 C 端移植：与 `services/fieldEditor.js` 同一座桥
-//   （`services/pickPage` 的全局事件 + Promise）。页面在 `pages/common/region-picker`，
-//   区划表在 `config/region-code.js`。
+//   （`services/pickPage` 的全局事件 + Promise）。页面在分包 `pages-sub/common/region-picker`，
+//   区划表在同目录 `region-code.js`（约 160KB，随分包按需下载）。
 // ★ 为什么是**跳页**而不是弹层：与字段编辑页同一条用户口径（2026-10-30）——
 //   输入类交互整页承载，键盘 / 滚动列不与页面抢高度。三级联动在弹层里只露半屏。
 // ★ 区码口径：若你的后端要求 `district_code` 为 6 位，注意区划表里东莞 / 中山 / 儋州 /
