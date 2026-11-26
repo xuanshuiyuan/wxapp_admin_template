@@ -19,6 +19,9 @@ import { PAGE_ADMIN_HOME } from '@/config/access';
  *
  * 为什么路径下沉到 config：`config/access.js` 是「页面清单 + 谁需要什么权限」的唯一真相源，
  * 路径必须与它同处；但页面禁止出现路径字面量，故这里转出给页面引。
+ * ★ 新增页面时：在 `config/access.js` 定义 `PAGE_*` 后，**必须**在下面这个 export 块加一行，
+ *   否则页面 `import { PAGE_X } from '@/services/route'` 会编译失败。`check_system` 的路由一致性
+ *   只校验 access ↔ pages.json，不会替你补这一步。
  * ⚠️ 之所以不在这里定义：config/ 不能反向 import services/（依赖方向红线）。
  */
 export {

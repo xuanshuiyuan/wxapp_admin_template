@@ -7,12 +7,16 @@
 //
 //   usePageGuard({ path: PAGE_X, onReady: refreshAll });
 //
+// ★ 顺序很关键：**先登录、再判权限**。
+//   冷启动 / 分享深链 / 清缓存后，本地 `permission` 还是空的 —— 若先跑权限门，
+//   有权限的用户也会被 toast 退回首页，而且会让登录门被跳过（页面永远进不来）。
+//   故 onLoad 只记 query，onShow 里先 `requireAdminLogin()`，拿到会话后再判权限。
+//
 // 语义：
-//   · onLoad：`requirePageAccess(path, query)` —— 无权时它已 toast + 退回，本页面停止初始化；
-//     `byParam` 解析不出目标（unresolved）不跳页，onDenied 里由页面给「参数不完整」空态；
-//   · onShow：`pageNeedsLogin(path)` 为真时跑 `requireAdminLogin()`（登录门按配置决定）；
-//   · onReady：**首次**通过两道门后执行一次（后续 onShow 只重新校验登录态，不重复取数 ——
-//     返回刷新由 listDirty / 页面自己的 onShow 决定，避免每次返回都重拉）。
+//   · onShow：登录门（是否执行由 PAGES.login 决定）→ 权限门 → 首次 onReady；
+//   · 通过后不再重复判（`ready` 短路）：返回本页不重新取数，
+//     列表刷新由 listDirty / 页面自己的 onShow 决定；
+//   · 权限门无权时它已 toast + 退回；`unresolved`（byParam 解析不出）由 onDenied 给空态。
 //
 // ⚠️ 本 composable 不接管错误提示：requirePageAccess 已处置「确实无权」，
 //    onDenied 只用于页面想额外给空态 / 记录原因的场景。
@@ -27,7 +31,7 @@ import { requireAdminLogin } from '@/services/session';
 /**
  * @param {object} options
  * @param {string} options.path 页面路径常量（config/access.js 的 PAGE_*）
- * @param {Function} [options.onReady] 首次通过两道门后执行（通常是取首屏数据）
+ * @param {Function} [options.onReady] 首次通过两道门后执行（参数 = onLoad 的 query）
  * @param {Function} [options.onDenied] 未通过时回调：`{ allowed:false, reason, codes, config }`
  * @returns {{ isAllowed: () => boolean }}
  */
@@ -38,15 +42,15 @@ export function usePageGuard(options = {}) {
 	// onLoad 的 query 要在 onShow 里可用（onReady 的取数常需要 id/type 这类参数）
 	let lastQuery = {};
 
+	// onLoad 只记录参数：此时本地可能还没有 token / permission，判权限一定是错的
 	onLoad((query) => {
 		lastQuery = query || {};
-		const access = requirePageAccess(path, lastQuery);
-		allowed = access.allowed;
-		if (!allowed && typeof onDenied === 'function') onDenied(access);
 	});
 
 	onShow(async () => {
-		if (!allowed) return;
+		if (ready) return;
+
+		// ① 登录门：先拿到会话（含 permission 快照），再判权限
 		if (pageNeedsLogin(path)) {
 			const ok = await requireAdminLogin();
 			if (!ok) {
@@ -54,10 +58,18 @@ export function usePageGuard(options = {}) {
 				return;
 			}
 		}
-		if (!ready) {
-			ready = true;
-			if (typeof onReady === 'function') onReady(lastQuery);
+
+		// ② 权限门：无权时 requirePageAccess 已 toast + route.back()
+		const access = requirePageAccess(path, lastQuery);
+		allowed = access.allowed;
+		if (!allowed) {
+			if (typeof onDenied === 'function') onDenied(access);
+			return;
 		}
+
+		// ③ 首次通过：取数只跑一次（返回本页不重复取数）
+		ready = true;
+		if (typeof onReady === 'function') onReady(lastQuery);
 	});
 
 	return { isAllowed: () => allowed };

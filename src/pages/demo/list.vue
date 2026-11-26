@@ -100,11 +100,11 @@ import { demoApi } from '@/api';
 import { DEMO_PAGE_ACTIONS, PAGE_DEMO } from '@/config/access';
 import { CODE_NO_PERMISSION, UPLOAD_TYPE_DEMO_FILE } from '@/config/dict';
 
-// 本页权限上下文（进页那一刻的快照；页内不再响应登录变化 —— 工具演示页够用）
-const permission = ref(getPermission());
-const grantedActions = byPermission(DEMO_PAGE_ACTIONS, permission.value);
-const canRequest = computed(() => grantedActions.some((a) => a.key === 'request'));
-const canUpload = computed(() => grantedActions.some((a) => a.key === 'upload'));
+// 本页权限上下文：**必须在登录门之后读**（冷启动时 setup 阶段 permission 还是空的）
+const permission = ref([]);
+const grantedActions = computed(() => byPermission(DEMO_PAGE_ACTIONS, permission.value));
+const canRequest = computed(() => grantedActions.value.some((a) => a.key === 'request'));
+const canUpload = computed(() => grantedActions.value.some((a) => a.key === 'upload'));
 
 // 上传结果（v-model：{ url, name, type, size }[]）
 const files = ref([]);
@@ -112,8 +112,8 @@ const files = ref([]);
 const requestState = ref('');
 const resultText = ref('');
 
-// 登录门 + 权限门统一接线（本页无首屏取数，数据由按钮触发）
-usePageGuard({ path: PAGE_DEMO });
+// 登录门 + 权限门统一接线；onReady 在登录成功后重读权限点（页内区块据此显隐）
+usePageGuard({ path: PAGE_DEMO, onReady: () => { permission.value = getPermission(); } });
 
 /** 把响应压成可读的一小段（演示用，真实业务不要整包打印响应体） */
 function showResult(label, body) {

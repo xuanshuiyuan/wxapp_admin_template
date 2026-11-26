@@ -19,8 +19,10 @@
    > （先 `grep -n "^\." src/common/css/main.css` 确认）。
 3. **全局替换** `__TITLE__` 为页面标题。
 4. **接上真实 api**：把 `// TODO: 换成真实 api` 处替换为 `@/api` 里的方法。
-5. **页面路径常量**：在 `src/config/access.js` 定义 `PAGE_*` + `PAGES` 准入，再 `import` 自 `@/services/route`
-   （模板里的 `PAGE___UPPER__` / `PAGE___DETAIL__` 是占位；**页面里禁止写路径字面量**）。
+5. **页面路径常量**：在 `src/config/access.js` 定义 `PAGE_*` + `PAGES` 准入；
+   再到 `src/services/route.js` 的 `export { ... } from '@/config/access'` 块**加一行转出**，
+   最后从 `@/services/route` import（漏了这步首次编译会报「未导出」）。
+   模板里的 `PAGE___UPPER__` / `PAGE___DETAIL__` 是占位；**页面里禁止写路径字面量**。
 6. **两道门**：模板已接 `usePageGuard({ path, onReady })`，不要删；它同时完成登录门与权限门。
 7. **登记 `src/pages.json`** 的 `pages` 数组（第一项是启动页）。
    > 分包页另加 `subPackages` + `preloadRule`。

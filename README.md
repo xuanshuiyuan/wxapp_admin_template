@@ -207,8 +207,8 @@ rm -f src/config/demo.js src/api/demo.js
 # 5) config/dict.js：删掉 PERM_DEMO_*、UPLOAD_TYPE_DEMO_FILE 与 UPLOAD_TYPE_DEFS 里的 demo 项
 # 6) config/endpoints.js：删掉 ENDPOINT_DEMO_*
 # 7) api/index.js：删掉 demo 导出
-# 8) 自检
-npm run verify:mp-weixin && npm run check:release
+# 8) 自检（★ 必须用 build:mp-weixin：verify 是 development 构建，含 localhost，check:release 必然失败）
+npm run build:mp-weixin && npm run check:release
 ```
 
 > 第 3–6 步也可以保留（`DEMO_MODE=false` 时它们不生效），但 `check:release` 会因

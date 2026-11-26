@@ -302,6 +302,28 @@ export function systemVersionGte(target) {
 }
 
 /**
+ * 隐私接口授权预检（微信 2023-09 起 chooseImage 属隐私接口）。
+ * 未同意《用户隐私保护指引》时 chooseImage 会直接失败（errno 112）；
+ * 页面只看到「无法选择图片」。这里先调 `wx.requirePrivacyAuthorize` 触发授权。
+ * 非微信端 / 低版本直接返回 null（视为无需预检）。
+ * @returns {Promise<object|null>} null = 通过或无需预检；错误对象 = 失败原因
+ */
+export function requirePrivacyAuthorize() {
+	return new Promise((resolve) => {
+		// #ifdef MP-WEIXIN
+		if (typeof wx !== 'undefined' && typeof wx.requirePrivacyAuthorize === 'function') {
+			wx.requirePrivacyAuthorize({
+				success: () => resolve(null),
+				fail: (err) => resolve(err || {})
+			});
+			return;
+		}
+		// #endif
+		resolve(null);
+	});
+}
+
+/**
  * 相机授权（scope.camera）：先显式要权限再挂相机，
  * 免得 camera 组件自己弹框、被拒后页面没有引导位。
  * @returns {Promise<boolean>} true = 已授权；false = 被拒

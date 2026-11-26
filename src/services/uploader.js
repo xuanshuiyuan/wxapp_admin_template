@@ -17,6 +17,7 @@
 // ---------------------------------------------------------------------------
 
 import { curl, isApiError } from '@/services/http';
+import { requirePrivacyAuthorize } from '@/services/platform';
 import { toast } from '@/services/toast';
 import { errorBrief } from '@/utils/error';
 import { ENDPOINT_ADMIN_UPLOAD } from '@/config/endpoints';
@@ -138,28 +139,6 @@ function pickOnMP(options = {}) {
 }
 
 /**
- * 微信端隐私授权预检（2023-09 起 chooseImage 属隐私接口）。
- *
- * 未同意《用户隐私保护指引》时，chooseImage 会直接失败（errMsg 含 privacy / errno 112），
- * 页面只看到「无法选择图片」。这里先调 `wx.requirePrivacyAuthorize` 触发授权；
- * 若公众平台未配置隐私指引，需要在微信公众平台补「相册 / 摄像头」声明（外部前提）。
- */
-function ensurePrivacyAuthorized() {
-	return new Promise((resolve) => {
-		// #ifdef MP-WEIXIN
-		if (typeof wx !== 'undefined' && typeof wx.requirePrivacyAuthorize === 'function') {
-			wx.requirePrivacyAuthorize({
-				success: () => resolve(null),
-				fail: (err) => resolve(err || {})
-			});
-			return;
-		}
-		// #endif
-		resolve(null);
-	});
-}
-
-/**
  * 隐私协议**未声明**「相册 / 摄像头」时的指引。
  * 错误原文是 `api scope is not declared in the privacy agreement`（errno 112）——
  * 只能由运营去公众平台补声明并提交审核；代码侧仅负责把话说清楚。
@@ -214,7 +193,7 @@ async function pickImages(options = {}) {
 	let msg = failMsgOf(error);
 
 	if (!files.length && /privacy|112/i.test(msg)) {
-		const privacyErr = await ensurePrivacyAuthorized();
+		const privacyErr = await requirePrivacyAuthorize();
 		if (!privacyErr) {
 			({ files, error } = await chooseImagesOnce(options.count));
 			msg = failMsgOf(error);
@@ -283,13 +262,14 @@ function fileMeta(file, url) {
 
 /** 单文件上传并返回元数据；无 url 视为失败 */
 async function uploadOne(file, type, options = {}) {
-	const { loading: _ignore, ...rest } = options;
+	const { loading = true, ...rest } = options;
 	// 上传属于基础设施能力，直接走请求层（services 不 import api —— 见分层红线）。
 	// 响应契约：`data.url`（单个）；兼容 `data.urls[]`（多图接口的写法）。
 	const body = await curl.upload(
 		{ filePath: file.path, name: 'file', formData: { type } },
 		ENDPOINT_ADMIN_UPLOAD,
-		{ toast: false, loading: true, ...rest }
+		// 批量上传传 { loading:false }：逐张弹全屏遮罩会盖住「上传中 x/y」进度
+		{ toast: false, loading, ...rest }
 	);
 	const data = (body && body.data) || {};
 	const url = data.url || (Array.isArray(data.urls) ? data.urls[0] : '');

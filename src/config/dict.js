@@ -99,9 +99,14 @@ export const UPLOAD_TYPE_DEFS = {
 	[UPLOAD_TYPE_DEMO_FILE]: { exts: UPLOAD_ALLOWED_EXTS, maxBytes: UPLOAD_MAX_BYTES, imagesOnly: false }
 };
 
-/** 取某类型的上传定义（未注册的 type 回落到 demo_file 的全局默认，便于联调时先跑通） */
+/** 取某类型的上传定义（未注册的 type 回落到全局默认，便于联调时先跑通） */
 export function uploadTypeDef(type) {
-	return UPLOAD_TYPE_DEFS[type] || UPLOAD_TYPE_DEFS[UPLOAD_TYPE_DEMO_FILE];
+	const def = UPLOAD_TYPE_DEFS[type];
+	if (def) return def;
+	// ⚠️ 不引用 UPLOAD_TYPE_DEMO_FILE：去演示化时会删掉该常量，
+	//    这里再引用就会在启动时 ReferenceError（用字面兜底 + warn）
+	console.warn(`[uploader] 上传类型 ${type} 未在 UPLOAD_TYPE_DEFS 注册，按全局默认白名单/限额处理`);
+	return { exts: UPLOAD_ALLOWED_EXTS, maxBytes: UPLOAD_MAX_BYTES, imagesOnly: false };
 }
 
 // —— 身份域（如你的后端有平台 / 商家两类管理员，可沿用；模板默认不启用） ——

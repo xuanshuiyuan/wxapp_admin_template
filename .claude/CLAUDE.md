@@ -45,7 +45,7 @@
 
 | 开关 | 位置 | 说明 |
 |---|---|---|
-| `DEMO_MODE` | `src/config/app.js` | true = 登录/绑定不请求网络，写 `config/demo.js` 的演示会话 |
+| `DEMO_MODE` | `src/config/app.js`（读 `VITE_DEMO_MODE`） | true = 登录/绑定不请求网络，写 `config/demo.js` 的演示会话；生产必须 false（误开启动即抛错） |
 | `source` | `src/config/app.js` | B 端小程序 = `1001`（网页 B = `0101`，C 端 = `1010`） |
 | `edition` | `src/config/app.js` | 接口版本协商值，**后端 `EditionList` 未登记则全部接口被拒** |
 | `VITE_API_KEY` | `.env.*.local`（不进 git） | 签名密钥，**按 source 区分**，向后端线下领取 |
@@ -140,7 +140,7 @@ api/<域>.js  →  curl.get / post / upload
    页面的标准写法是**一行** `usePageGuard({ path, onReady })`（`composables/usePageGuard.js`），
    它同时完成两道门与首次取数；手写等价语义时不要漏任何一道。
    配置只有一处 `src/config/access.js`，判据只有一处 `src/services/pageAccess.js`。
-9. **演示模式**（`DEMO_MODE=true`）下以上链路照常运行，只是登录/绑定不请求网络。
+9. **演示模式**（`.env.development` 的 `VITE_DEMO_MODE=true`）下以上链路照常运行，只是登录/绑定不请求网络；生产由 `VITE_DEMO_MODE=false` + 启动硬护栏保证不出现。
 
 ### 3.4 全局业务码守卫
 
@@ -311,7 +311,7 @@ config/theme.js         theme.scss 的 JS 镜像（给 uview 组件 color prop �
 4. `config/app.js` 的 `edition` 与后端 `EditionList` 对齐。
 5. `config/dict.js` + `config/access.js` 换成真实权限码。
 6. 后端自建 admin 登录 / 绑定，并把角色授权路径写进登录缓存 `api` 字段。
-7. 把 `DEMO_MODE` 改为 `false`。
+7. 确认 `.env.production` 的 `VITE_DEMO_MODE=false`（去演示化清单见 README §4.1）。
 
 ---
 

@@ -28,6 +28,20 @@
 - 清理 `.claude` 悬空引用（`modules/login`、`memory/api_conventions`、`BUG-00x`、`K-0x`、`PAGE_LEDGER_*`、`rule-style-css`）。
 - 新增 `.claude/templates/page/page-form.vue`（表单页模板：跳页取值 + 底栏提交 + 两道门）。
 
+## 二-b、复评（r2）回归修复
+
+| ID | 问题 | 处置 |
+|---|---|---|
+| R-1 | `usePageGuard` 先权限门后登录门：冷启动/深链时 permission 为空 → 有权限用户也被拒 | 顺序改为 onShow 里**先登录、再判权限**；onLoad 只记 query；`demo/list` 的权限快照改为 onReady 后重读 |
+| R-2 | `check:release` 裸 `localhost` 被 uview `async-validator` 永久误报 | 改为 `localhost:\d+` / `127\.0\.0\.1:\d+` 正则 |
+| R-3 | README 去演示化自检用 `verify:*`（development 含 localhost）→ 闸门必失败 | 改为 `build:mp-weixin && check:release` |
+| R-4 | 删除 `UPLOAD_TYPE_DEMO_FILE` 后 `uploadTypeDef` 抛 ReferenceError | 兜底改为字面默认值 + `console.warn`，不再引用可删常量 |
+| R-5 | 批量上传的 `{loading:false}` 被 `uploadOne` 丢弃 → 每张全屏遮罩 | 正确透传 `loading`（单张默认 true） |
+| R-6 | 新 `PAGE_*` 忘了在 `services/route.js` 转出（模板文档未写） | 在 route.js 注释、`templates/page/README.md`、`rule-add-page` 明写这一步 |
+
+同批清理：`uploader` 的隐私预检移到 `platform.requirePrivacyAuthorize()`（`#ifdef` 归位）；
+CLAUDE/QUICK_START/current_sprint 的 `DEMO_MODE` 描述改为环境变量口径；`rule-performance` 的「只有 2 个页面」纠正为 7 个模板页。
+
 ## 三、验证
 
 | 项 | 命令 | 结果 |
@@ -54,4 +68,5 @@
 
 ## 五、评审
 
-评审：已评审（`review.md`，有条件通过）→ 本轮修复 5 个阻断 + 采纳建议 → **待用户决定是否复评**。
+- r1：有条件通过（3.4/5，5 个阻断）→ 已修。
+- r2：有条件通过（1 个剩余阻断 R-1 + 5 项高优先回归）→ 已全部修复（见 §二-b），**待 r3 确认关闭**。

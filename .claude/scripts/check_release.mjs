@@ -69,14 +69,16 @@ if (!existsSync(DIST)) {
 		}
 	})(DIST);
 
+	// ⚠️ 用「带端口的正则」而不是裸 localhost：uview 依赖的 async-validator 里有
+	//    URL 校验正则，裸字符串会永久误报（复评 R-2）
 	const needles = [
-		['localhost', '产物里出现 localhost（开发域名发到生产）'],
-		['127.0.0.1', '产物里出现 127.0.0.1'],
-		['REPLACE_', '产物里出现未替换的 REPLACE_ 占位'],
-		['demo-token-not-a-real-one', '产物里出现演示会话 token（演示代码未剥离）']
+		[/localhost:\d+/, '产物里出现 localhost:<端口>（开发域名发到生产）'],
+		[/127\.0\.0\.1:\d+/, '产物里出现 127.0.0.1:<端口>'],
+		[/REPLACE_/, '产物里出现未替换的 REPLACE_ 占位'],
+		[/demo-token-not-a-real-one/, '产物里出现演示会话 token（演示代码未剥离）']
 	];
-	for (const [needle, msg] of needles) {
-		const hit = files.find((f) => readFileSync(f, 'utf8').includes(needle));
+	for (const [re, msg] of needles) {
+		const hit = files.find((f) => re.test(readFileSync(f, 'utf8')));
 		if (hit) errors.push(`${msg}：${hit.replace(ROOT + '/', '')}`);
 	}
 

@@ -92,7 +92,7 @@ Agent 定义在 `.claude/agents/*.md`（标准 Claude Code 子代理格式，含
    把角色授权路径列表写进登录缓存容器的 `api` 字段（后端 `conf.CacheFieldApi`）。
 2. `POST /admin/login/bind`：手机号 + 密码 + **新** code，响应与登录同构。
 3. 登录响应把 `permission` 数组一起下发（前端显隐判据）。
-4. 前端：`DEMO_MODE=false`，替换 `PERM_DEMO_*` 与 `config/access.js`。
+4. 前端：确认 `.env.production` 的 `VITE_DEMO_MODE=false`，替换 `PERM_DEMO_*` 与 `config/access.js`。
 
 完整步骤与响应结构见 `README.md` 第 5 节。
 
