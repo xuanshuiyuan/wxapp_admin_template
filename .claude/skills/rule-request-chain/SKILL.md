@@ -12,7 +12,7 @@ description: 当代码要发 HTTP 请求、处理接口失败、需要设置请�
 **只有一条合法路径**（其他一律禁止）：
 
 ```
-api/<域>.js  →  curl.get / post / postJSON / upload
+api/<域>.js  →  curl.get / post / upload（**只有这三种请求形态**）
                     ↓
               services/http/request.js
                     ↓
@@ -28,8 +28,8 @@ curl.get(ENDPOINT_DEMO_LIST, { page: 1, page_size: 20 }, { guard: false });
 // POST：默认 x-www-form-urlencoded（★ 本工程全部接口都发表单 —— 已实测收口，见 K-19）
 curl.post(ENDPOINT_ADMIN_LOGIN, { code }, { authRetry: false, toast: false });
 
-// POST JSON
-curl.postJSON(url, data, options);
+// ❌ 没有 postJSON：后端统一表单解码；第三方 JSON 接口在 api 层显式
+//    request({ url, method:'POST', contentType:'application/json', rawResponse:true })
 
 // 上传：默认落点 ENDPOINT_ADMIN_UPLOAD；**一次一个文件**
 // ⚠️ 微信 wx.uploadFile 没有多文件参数（uni 的 files 在微信端不生效），

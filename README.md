@@ -122,7 +122,9 @@ export function upload(filePath, type) {
   按 `type`（`network` / `http` / `business` / `auth` / `guard`）分支。
 - options：`{ toast: false }` 静默 · `{ loading: true }` 托管 loading ·
   `{ authRetry: false }`（登录/绑定**必传**）· `{ guard: false }`（豁免全局守卫）。
-- 新接口**禁止 `curl.postJSON`**；数组字段用 `joinIdsParam` 逗号串，禁止 `key[]=`。
+- **没有 `postJSON`**：后端统一表单解码；第三方 JSON 接口在 api 层显式 `rawResponse:true`。
+- 数组字段一律逗号串（GET / POST 同口径，`joinIdsParam`），禁止 `key[]=` / `key[0]=`。
+- 响应必须是 `{ code, msg, data }`：缺 `code` 的对象按「响应格式异常」抛错（第三方接口显式豁免）。
 - 签名头：`source / timestamp / sign / random / edition / token / userid`，
   `sign = MD5("Source=..&TimeStamp=..&Key=<apiKey>&Weight=<random>").toUpperCase()`。
   local / develop 后端可用 `VITE_DEVELOP_BYPASS=develop` 跳过签名（生产禁用）。

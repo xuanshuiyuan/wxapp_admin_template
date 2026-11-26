@@ -67,7 +67,7 @@ export const vehicleApi = {
 3. **判定方法形态**：
    - 查询/列表 → `curl.get(url, params, options)`
    - 表单提交（后端历史接口格式） → `curl.post(url, data, options)`
-   - JSON 接口 → `curl.postJSON(url, data, options)`
+   - 第三方 JSON 接口 → `request({ ..., contentType: 'application/json', rawResponse: true })`
    - 文件 → `curl.upload({ filePath, name, formData }, url, options)`
 4. **判定准入形态**：公开接口 / 需登录态（带 `token`）/ 需权限点。
    ⚠️ **管理端没有「未绑手机号」这道硬闸口**（C 端的 `auth.CheckUser` → `50011` →

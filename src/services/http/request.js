@@ -35,7 +35,7 @@ function resolveURL(url) {
 	return `${base}${routeVersion}/${path}`;
 }
 
-/** 拼 GET 查询参数，数组展开为 key=v1&key=v2 */
+/** 拼 GET 查询参数；数组**一律逗号串**（与 POST 的 toQueryString 同口径，后端表单/查询解码器不认 key[]=） */
 function buildURL(url, params) {
 	if (!params || typeof params !== 'object') return url;
 	const qs = Object.keys(params)
@@ -43,7 +43,7 @@ function buildURL(url, params) {
 		.map(key => {
 			const value = params[key];
 			if (Array.isArray(value)) {
-				return value.map(item => `${encodeURIComponent(key)}=${encodeURIComponent(item)}`).join('&');
+				return `${encodeURIComponent(key)}=${encodeURIComponent(value.join(','))}`;
 			}
 			return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
 		})
@@ -71,6 +71,8 @@ function bail(err, toast) {
  * @property {boolean} [authRetry=true] 登录失效时是否静默重登并重放（登录接口本身传 false）
  * @property {boolean} [guard=true] 命中全局业务码守卫（services/guards.js）时是否执行其动作；
  *                                  守卫目标页自己的接口、或只想本地静默处理时传 false
+ * @property {boolean} [rawResponse=false] 跳过统一响应校验（**仅第三方接口**用）：
+ *                                  默认响应必须是对象且带 `code`；置 true 则原样返回 body。
  * @property {number} [timeout]
  */
 
@@ -98,6 +100,7 @@ async function sendWithPolicy(options) {
 		toast = true,
 		authRetry = true,
 		guard: guardEnabled = true,
+		rawResponse = false,
 		timeout = DEFAULT_TIMEOUT,
 		...rest
 	} = options;
@@ -140,11 +143,15 @@ async function sendWithPolicy(options) {
 	if (!body || typeof body !== 'object' || Array.isArray(body)) {
 		bail(new ApiError(ERROR_TYPE.unknown, '响应格式异常', { raw: body }), toast);
 	}
-	// 后端 code 可能是字符串，统一按数字比较
-	const numericCode = Number(body.code);
+	// 第三方接口显式声明 rawResponse:true 时跳过统一响应校验（业务接口**一律**要求 {code,msg,data}）
+	if (rawResponse) return body;
 
-	// 无 code 字段视为成功：只对**对象**放行（兼容不返回统一包装的第三方接口）
-	if (body.code === undefined || body.code === null || numericCode === CODE_SUCCESS) return body;
+	// 后端 code 可能是字符串，统一按数字比较；缺失/非数字一律按「响应结构不合法」处理
+	const numericCode = Number(body.code);
+	if (!Number.isFinite(numericCode)) {
+		bail(new ApiError(ERROR_TYPE.unknown, '响应格式异常（缺少 code）', { raw: body }), toast);
+	}
+	if (numericCode === CODE_SUCCESS) return body;
 
 	if (numericCode === CODE_LOGIN_EXPIRED) {
 		if (authRetry && authHandler) {

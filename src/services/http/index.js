@@ -1,6 +1,13 @@
 // ---------------------------------------------------------------------------
 // http 层唯一出口：api/ 里只 import 这个文件。
-// 约定：POST 默认 x-www-form-urlencoded（后端历史接口格式），JSON 接口用 postJSON。
+//
+// ★ 请求结构统一约定（全工程只允许这三条形态）：
+//   · 读接口        curl.get(url, params)      → GET + query（数组一律逗号串）
+//   · 业务写 / 查询 curl.post(url, data)       → POST + application/x-www-form-urlencoded
+//   · 文件上传      curl.upload(payload, url)  → POST + multipart/form-data（一次一个文件）
+//   · 响应统一      { code, msg, data }，code=0 成功；非该结构一律抛 ApiError
+//                   （第三方接口在 api 层显式传 `{ rawResponse: true }`，不进入统一校验）
+//   ❌ 不提供 postJSON：后端表单解码器是统一口径，JSON 请求体只会制造第二种结构。
 // ---------------------------------------------------------------------------
 
 import { request, registerAuthHandler, DEFAULT_TIMEOUT, TRANSPORT_UPLOAD } from './request';
@@ -30,11 +37,6 @@ export const curl = {
 			contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
 			...options
 		});
-	},
-
-	/** POST：JSON 格式 */
-	postJSON(url, data, options = {}) {
-		return request({ url, method: 'POST', data: data || {}, contentType: 'application/json', ...options });
 	},
 
 	/**

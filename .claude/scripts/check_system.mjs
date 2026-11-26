@@ -18,6 +18,8 @@
 //   9. ★ 文档漂移    —— `.claude/**` 里的内部路径引用必须存在；
 //                        关键陈旧值黑名单（错误端口 / 已删文件 / 悬空编号）不得出现
 //                        （复评 r2 建议：check_system 通过 ≠ 文档自洽）
+//  10. ★ 请求结构统一 —— 除 transport 层外，禁止直接调 uni.request / uni.uploadFile
+//                        （绕过请求层 = 丢失签名、重登、错误归一，制造第二种请求结构）
 //
 // ⚠️ 原先的「rules/ ↔ rule-skill 按日期比对」已于 2026-11-16 **删除**：
 //    `.claude/rules/` 整个目录已迁入 rule-skill 并删除（删前逐条审计过缺口），
@@ -785,8 +787,34 @@ async function checkDocs() {
 	info.push(`文档漂移：扫描 ${scanned} 个文件，检查 ${links} 个内部引用`);
 }
 
+// ── 10. ★ 请求结构统一：只允许 services/http/transport.js 直接调 uni.request/uploadFile ──
+// 为什么：绕过请求层会丢签名注入、40005 重登重放、ApiError 归一 —— 等于在工程里
+// 再造一种请求结构。页面 / api / services 一律走 curl.*。
+async function checkHttpBypass() {
+	const files = (await walk(join(ROOT, 'src'))).filter(
+		(f) => /\.(js|vue)$/.test(f) && !f.includes('uni_modules')
+	);
+	const ALLOW = 'src/services/http/transport.js';
+	const CALL = /\buni\.(request|uploadFile)\s*\(/;
+	let scanned = 0;
+	for (const f of files) {
+		const r = rel(f);
+		if (r === ALLOW) continue;
+		const src = await read(f);
+		if (!src || !CALL.test(src)) continue;
+		scanned += 1;
+		src.split('\n').forEach((line, i) => {
+			if (/^\s*(\/\/|\*)/.test(line)) return;
+			const m = line.match(CALL);
+			if (m) err('请求结构', `${r}:${i + 1} 直接调用 uni.${m[1]}，必须走 services/http（禁止绕过请求层）`);
+		});
+	}
+	info.push(`请求结构：扫描 ${files.length} 个源文件（直接调用 uni.request/uploadFile 的越权点 ${scanned} 个文件）`);
+}
+
 await checkStructure();
 await checkDocs();
+await checkHttpBypass();
 await checkCrossReference(agentNames, workflowNames);
 
 const report = {

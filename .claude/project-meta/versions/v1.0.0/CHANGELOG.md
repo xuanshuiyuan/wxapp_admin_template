@@ -46,11 +46,29 @@ R-6 第三处（`rule-add-page`）补「到 `services/route.js` export 块加一
 同批清理：`uploader` 的隐私预检移到 `platform.requirePrivacyAuthorize()`（`#ifdef` 归位）；
 CLAUDE/QUICK_START/current_sprint 的 `DEMO_MODE` 描述改为环境变量口径；`rule-performance` 的「只有 2 个页面」纠正为 7 个模板页。
 
+## 二-c、HTTP 请求结构统一（用户 2026-11-26 要求）
+
+只允许三种请求形态，且响应结构唯一：
+
+| 形态 | 入口 | 结构 |
+|---|---|---|
+| 读接口 | `curl.get(url, params)` | GET + query；数组**逗号串** |
+| 业务写 / 查询 | `curl.post(url, data)` | POST + `application/x-www-form-urlencoded`；数组逗号串 |
+| 文件上传 | `curl.upload(payload, url)` | POST + multipart（一次一个文件） |
+
+- **移除 `curl.postJSON`**：后端统一表单解码，JSON 请求体不再作为第二种结构；
+  第三方 JSON 接口只能在 api 层显式 `request({ contentType:'application/json', rawResponse:true })`。
+- **响应强校验**：默认必须是对象且带数字 `code`；缺 `code` / 非对象一律抛
+  `ApiError(type='unknown', '响应格式异常')`，只有显式 `rawResponse:true` 才原样返回。
+- **GET 数组序列化与 POST 对齐**（逗号串），不再出现 `key=v1&key=v2` 与 `key[0]=` 两种写法。
+- **自动闸门**：`check_system.mjs` 第 10 项扫描 `src/`，除 `services/http/transport.js` 外
+  出现 `uni.request(` / `uni.uploadFile(` 即报错（防止绕过请求层）。
+
 ## 三、验证
 
 | 项 | 命令 | 结果 |
 |---|---|---|
-| 系统自检 | `node .claude/scripts/check_system.mjs` | ✅ 全部通过 |
+| 系统自检 | `node .claude/scripts/check_system.mjs` | ✅ 全部通过（含文档漂移 + 请求结构统一两项新检查） |
 | 模板审计 | `node .claude/scripts/check_templates.mjs` | ✅ 22 个 .vue |
 | 微信小程序构建 | `npm run verify:mp-weixin` | ✅ |
 | H5 构建 | `npm run verify:h5` | ✅ |

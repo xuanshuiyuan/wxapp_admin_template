@@ -75,7 +75,7 @@ export const __DOMAIN__Api = {
 	 * @returns {Promise<object>} 响应体
 	 */
 	__SUBMIT__(data = {}, options = {}) {
-		// 后端历史接口默认 x-www-form-urlencoded；若该接口是 JSON，改用 curl.postJSON
+		// 后端统一 x-www-form-urlencoded；第三方 JSON 接口用 request({ contentType:'application/json', rawResponse:true })
 		return curl.post(ENDPOINT___DOMAIN_____SUBMIT__, data, { loading: true, ...options });
 	}
 };
@@ -83,7 +83,7 @@ export const __DOMAIN__Api = {
 // ---------------------------------------------------------------------------
 // 备注（模板自带的提醒，接入后删除本段）
 //
-// · 若某接口是 JSON 格式 → curl.postJSON(url, data, options)
+// · 第三方 JSON 接口 → request({ ..., contentType: 'application/json', rawResponse: true })
 // · 若某接口是文件上传 → curl.upload({ filePath, name, formData }, url, options)
 //   （默认落点 ENDPOINT_ADMIN_UPLOAD，可传第二参覆盖）
 // · 若该域是「守卫目标页自己的接口」→ 必须传 { guard: false }
