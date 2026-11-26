@@ -60,8 +60,10 @@ description: 在本工程新增页面、新界面、新业务模块页，或要�
    ❌ 不要回到「子页返回就无条件 reload」——那是 v1.1.0 的旧口径，返回会整体替换列表闪一下（v1.2.2 改）。
 4. **登记访问配置** —— `src/config/access.js`（★ 页面路径 / 展示清单 / 权限码归属的**唯一真相源**）：
    ```js
-   // ① 页面路径常量：全工程**唯一的字面量处**（services/route.js 会转出，页面不写路径字符串）
+   // ① 页面路径常量：全工程**唯一的字面量处**
    export const PAGE_XXX_LIST = '/pages/xxx/list';
+   // ⚠️ 再到 services/route.js 的 `export { ... } from '@/config/access'` 块**加一行转出**，
+   //    否则页面 import { PAGE_XXX_LIST } from '@/services/route' 会编译失败（re-export 不会自动带上新常量）
 
    // ② 页面准入表 PAGES —— 三种语义，按本页实际情况选一种
    [PAGE_XXX_LIST]:    { name: 'XXX',      login: true },                                        // 无权限门（登录即可）

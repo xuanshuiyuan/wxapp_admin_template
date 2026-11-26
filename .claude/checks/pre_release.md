@@ -16,7 +16,7 @@
 | 1.2 | `security_agent` 无严重 / 高风险项 | ☐ | |
 | 1.3 | 本次发布内的**真重要变更**已在 commit message 记录（CHANGELOG 已冻结，见 §11.1） | ☐ | 重要变更无记录 = 发布未完成 |
 | 1.4 | `.env.production.local` 的 `VITE_API_KEY` 已就位 | ☐ | ⚠️ **换机器 / 他人 clone 必须另行向后端领取**，否则产物签不出合法请求（K-04） |
-| 1.5 | 本次若改了 `config/app.js` 的 `edition` / `source` → **后端已登记新值** | ☐ | ⚠️ 未登记的值会被后端 **fail-closed** 拒（`Im Invalid Request!`），且是**全局**协商头（K-02/K-03） |
+| 1.5 | 本次若改了 `config/app.js` 的 `edition` / `source` → **后端已登记新值** | ☐ | ⚠️ 未登记的值会被后端 **fail-closed** 拒（`Im Invalid Request!`），且是**全局**协商头（全局协商头，改前必须与后端确认） |
 | 1.6 | **与后端确认 `VITE_MOCK_LOGIN_CODE` 联调通道在生产无效** | ☐ | ⚠️ 若生效 = 越权风险（`src/config/env.js` 已加启动硬护栏，仍要确认后端也拒绝） |
 | 1.7 | 回滚方案已准备好（**不能事后补**） | ☐ | |
 

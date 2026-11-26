@@ -39,6 +39,10 @@
 | R-5 | 批量上传的 `{loading:false}` 被 `uploadOne` 丢弃 → 每张全屏遮罩 | 正确透传 `loading`（单张默认 true） |
 | R-6 | 新 `PAGE_*` 忘了在 `services/route.js` 转出（模板文档未写） | 在 route.js 注释、`templates/page/README.md`、`rule-add-page` 明写这一步 |
 
+r3 追加：N-1（登录 await 期间 onShow 重入会重复 onReady）已加 `if (ready) return;` 复查；
+R-6 第三处（`rule-add-page`）补「到 `services/route.js` export 块加一行」；
+残留编号（K-02/K-03、BUG-003/007）已清；CHANGELOG 拦截项计数改为按实际项描述。
+
 同批清理：`uploader` 的隐私预检移到 `platform.requirePrivacyAuthorize()`（`#ifdef` 归位）；
 CLAUDE/QUICK_START/current_sprint 的 `DEMO_MODE` 描述改为环境变量口径；`rule-performance` 的「只有 2 个页面」纠正为 7 个模板页。
 
@@ -51,7 +55,7 @@ CLAUDE/QUICK_START/current_sprint 的 `DEMO_MODE` 描述改为环境变量口径
 | 微信小程序构建 | `npm run verify:mp-weixin` | ✅ |
 | H5 构建 | `npm run verify:h5` | ✅ |
 | 生产构建 | `npm run build:mp-weixin` | ✅ |
-| 发布闸门 | `npm run check:release` | ❌ 预期失败（模板占位 + demo 页未剥离），清单正确列出三项 |
+| 发布闸门 | `npm run check:release` | ❌ 预期失败，拦截项正确（生产 host 占位 / REPLACE_ 残留 / demo 页未剥离） |
 | 权限菜单逻辑 | esbuild 打包 access+demo 后 Node 断言 | ✅ |
 | 生产演示旁路 | `VITE_DEMO_MODE=true npm run build:mp-weixin` | ✅ 产物首行即 `throw`（启动阻断） |
 | 开发者工具 / 真机 | — | 未执行 |
@@ -69,4 +73,5 @@ CLAUDE/QUICK_START/current_sprint 的 `DEMO_MODE` 描述改为环境变量口径
 ## 五、评审
 
 - r1：有条件通过（3.4/5，5 个阻断）→ 已修。
-- r2：有条件通过（1 个剩余阻断 R-1 + 5 项高优先回归）→ 已全部修复（见 §二-b），**待 r3 确认关闭**。
+- r2：有条件通过（1 个剩余阻断 R-1 + 5 项高优先回归）→ 已全部修复（见 §二-b）。
+- r3：**通过**（新增 N-1 / R-6 残留已一并修掉）；剩余非阻断建议与待拍板项见 r2 §3/§4 与本文件 §四。

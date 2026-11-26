@@ -36,7 +36,7 @@
 | 1 | 根节点 `@touchstart` / `@touchmove` | 下拉距离无兜底来源（原生不给 dy 时） |
 | 2 | `<app-navbar>` | 无自绘顶栏（高度含状态栏、让位微信胶囊） |
 | 3 | `<app-loading :show>`（局部） | 首屏无 loading |
-| 4 | **`<app-loading :mask>`（不带 `show`）** | ★ 请求层 `{ loading:true }` **静默降级**成原生 `uni.showLoading`，样式不符（BUG-003） |
+| 4 | **`<app-loading :mask>`（不带 `show`）** | ★ 请求层 `{ loading:true }` **静默降级**成原生 `uni.showLoading`，样式不符 |
 | 5 | **`<app-modal />`** | ★ `pushModal` 什么都不弹，且滞留队列会在**切页后才冒出**（真实事故：漏挂 `<app-modal>` 时守卫弹窗不出现） |
 | 6 | `<app-refresher>` + `scroll-view` 的 `refresher-*` 接线 | 下拉三段态无指示器 |
 

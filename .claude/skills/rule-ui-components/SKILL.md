@@ -223,7 +223,7 @@ import { theme } from '@/config/theme';
 | `state` | 三段态（由 `usePullRefresh` 给的 `pullState`） |
 | `lastAt` | 最后刷新时刻（`usePullRefresh` 给的 `lastRefreshAt`） |
 | `offset` | 跟手位移（`usePullRefresh` 给的 `offset`） |
-| `top` | 浮层挂载高度 = **滚动区上沿 y 坐标**。默认 `null` = `customBarHeight`（适用于**顶部有 `app-navbar`** 的页面）。★ **没有自绘导航栏的页面必须传**（传 `layout.statusBarHeight`）—— 否则指示器落进 iPhone 灵动岛被物理遮住（2026-10-26 真机踩过，BUG-007） |
+| `top` | 浮层挂载高度 = **滚动区上沿 y 坐标**。默认 `null` = `customBarHeight`（适用于**顶部有 `app-navbar`** 的页面）。★ **没有自绘导航栏的页面必须传**（传 `layout.statusBarHeight`）—— 否则指示器落进 iPhone 灵动岛被物理遮住（真机踩过：落进灵动岛） |
 | `tone` | `'ink'`（默认） / `'aurora'` —— 下拉空档露出**深色极光底**时传后者整组转白（否则墨色文字≈1.5:1 对比度，等于看不见） |
 
 > 完整接线（含五条不可省口径）见 `rule-add-page`。

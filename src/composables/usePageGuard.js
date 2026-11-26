@@ -53,6 +53,9 @@ export function usePageGuard(options = {}) {
 		// ① 登录门：先拿到会话（含 permission 快照），再判权限
 		if (pageNeedsLogin(path)) {
 			const ok = await requireAdminLogin();
+			// 登录在飞期间 onShow 可能再次触发（切后台再回）：回来后先复查，
+			// 否则两个并发回调都会走到 onReady，首屏请求会重复一次
+			if (ready) return;
 			if (!ok) {
 				if (typeof onDenied === 'function') onDenied({ allowed: false, reason: 'login' });
 				return;
