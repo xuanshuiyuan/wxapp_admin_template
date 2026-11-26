@@ -105,6 +105,10 @@ usePageGuard({
 	onReady: (query) => {
 		formId = (query && query.id) || '';
 		// if (formId) loadDetail();
+	},
+	// 登录失败落到错误态（保存失败也复用同一个 error）；权限门本身已 toast + 退回
+	onDenied: (res) => {
+		error.value = res.reason === 'unresolved' ? '参数不完整，请从列表进入' : '登录失败，请检查网络后重试';
 	}
 });
 
@@ -160,6 +164,8 @@ async function onSubmit() {
 		// TODO: 换成真实 api；新增 / 编辑二选一
 		// await __DOMAIN__Api.save({ id: formId, name, mobile: form.mobile, remark: form.remark });
 		await Promise.resolve();
+		// 若本页从列表进入：写成功后标记列表脏，返回时列表 onShow 只消费一次（机制见 services/listDirty.js）
+		// markListDirty(PAGE_XXX_LIST);
 		toast('保存成功');
 		route.back();
 	} catch (e) {

@@ -296,6 +296,7 @@ npm run verify:mp-weixin    # 用 development 环境配置构建（产物在 dis
 npm run verify:h5
 npm run build:mp-weixin     # 发布产物（production 配置）
 npm run check:release       # 发布闸门：占位 / 演示代码 / 联调旁路 / host 一致性（必须通过才能发）
+npm run check:release -- h5 # H5 同理（读 VITE_HOST_H5；同域部署允许 host 留空）
 ```
 
 模板交付前的验证结论记录在 `.claude/context/current_sprint.md`；未跑过的项写「未执行，待验证」。

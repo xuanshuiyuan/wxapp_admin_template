@@ -138,13 +138,16 @@ async function sendWithPolicy(options) {
 		bail(new ApiError(ERROR_TYPE.http, `请求失败（${res.statusCode}）`, { status: res.statusCode, raw: res }), toast);
 	}
 
+	// 204 No Content：HTTP 语义是「成功且无响应体」，按统一结构归一，避免被当成格式错误
+	if (res.statusCode === 204) return { code: CODE_SUCCESS, msg: '', data: null };
+
 	const body = res.data;
-	// 非对象（HTML 错误页 / 纯文本）不可能是统一响应：按 unknown 抛，别当成成功
-	if (!body || typeof body !== 'object' || Array.isArray(body)) {
-		bail(new ApiError(ERROR_TYPE.unknown, '响应格式异常', { raw: body }), toast);
-	}
-	// 第三方接口显式声明 rawResponse:true 时跳过统一响应校验（业务接口**一律**要求 {code,msg,data}）
+	// 第三方接口显式声明 rawResponse:true 时跳过统一响应校验（数组 / 纯文本 / 非包装结构都原样返回）
 	if (rawResponse) return body;
+	// 其余一律要求 { code, msg, data }：非对象（HTML 错误页 / 纯文本 / 顶层数组）按 unknown 抛
+	if (!body || typeof body !== 'object' || Array.isArray(body)) {
+		bail(new ApiError(ERROR_TYPE.unknown, '响应格式异常（期望 { code, msg, data }）', { raw: body }), toast);
+	}
 
 	// 后端 code 可能是字符串，统一按数字比较；缺失/非数字一律按「响应结构不合法」处理
 	const numericCode = Number(body.code);

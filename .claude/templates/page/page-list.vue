@@ -76,7 +76,7 @@
 					:error="error"
 					:loading="loading"
 					:finished="finished"
-					@retry="reload"
+					@retry="retry"
 				/>
 			</view>
 		</scroll-view>
@@ -119,8 +119,15 @@ const {
 	}
 );
 
-// ★ 两道门（登录门 + 权限门）统一入口：新页面必须接，否则 H5 深链/分享直达会先渲染再靠 40102 兜底
-usePageGuard({ path: PAGE___UPPER__, onReady: reload });
+// ★ 两道门（登录门 + 权限门）统一入口：新页面必须接，否则 H5 深链/分享直达会先渲染再靠 40102 兜底。
+//   onDenied 把「登录失败 / 参数不完整」落到错误态；retry 同时兜住「门没过」与「取数失败」两种重试。
+const { retry } = usePageGuard({
+	path: PAGE___UPPER__,
+	onReady: reload,
+	onDenied: (res) => {
+		error.value = res.reason === 'unresolved' ? '参数不完整，请从列表进入' : '登录失败，请检查网络后重试';
+	}
+});
 
 // 下拉三段态 + 「最后更新」时刻全在公共件里，页面只给取数函数与在飞判重
 const {

@@ -64,12 +64,14 @@ export function storageKey(name) {
 //
 // ⚠️ 为什么必须走环境变量：硬编码 true 时，团队 clone 后填完域名直接 build，
 //    就会得到一个「任意手机号 + 任意 6 位密码即可进入」的生产包 —— 这是真实鉴权旁路。
-// ⚠️ 生产环境若误开（VITE_APP_ENV=production 且 VITE_DEMO_MODE=true）启动即抛错，
+// ⚠️ **只有 `VITE_APP_ENV=development` 允许开演示**；其余任何环境（production / staging / 漏写）
+//    在启动时直接抛错 —— 用白名单而不是只挡 production，避免自定义 --mode 时护栏失效。
 //    宁可起不来，也不让演示登录进生产。
 // ⚠️ 去演示化（删除 demo 页 / 会话 / 接口）的清单见 README §4.1；发布检查会拦截残留。
 // ---------------------------------------------------------------------------
 export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 
-if (DEMO_MODE && import.meta.env.VITE_APP_ENV === 'production') {
-	throw new Error('生产构建禁止 VITE_DEMO_MODE=true（演示登录会让任意密码进入系统）');
+const APP_ENV = import.meta.env.VITE_APP_ENV || 'development';
+if (DEMO_MODE && APP_ENV !== 'development') {
+	throw new Error(`VITE_DEMO_MODE=true 只允许在 development 环境（当前 ${APP_ENV}）`);
 }

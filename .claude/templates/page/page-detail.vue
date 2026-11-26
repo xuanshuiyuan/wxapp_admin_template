@@ -51,7 +51,7 @@
 				     这里只取 message（把对象丢进模板会渲染成含 raw/type 的一坨 JSON） -->
 				<view v-if="error" class="__PREFIX__-page__error">
 					<text class="__PREFIX__-page__error-text">{{ errorText }}</text>
-					<button class="btn btn--ghost btn--lg btn--block" :hover-class="'btn--hover'" @click="load">
+					<button class="btn btn--ghost btn--lg btn--block" :hover-class="'btn--hover'" @click="retry">
 						点击重试
 					</button>
 				</view>
@@ -130,12 +130,16 @@ const {
 	onTouchMove
 } = usePullRefresh({ onRefresh: load });
 
-// ★ 两道门（登录门 + 权限门）统一入口；onReady 拿到 onLoad 的 query
-usePageGuard({
+// ★ 两道门（登录门 + 权限门）统一入口；onReady 拿到 onLoad 的 query。
+//   onDenied 落到错误态；retry 同时兜住「门没过」与「取数失败」。
+const { retry } = usePageGuard({
 	path: PAGE___UPPER__,
 	onReady: (options) => {
 		detailId = (options && options.id) || '';
 		load();
+	},
+	onDenied: (res) => {
+		error.value = res.reason === 'unresolved' ? '参数不完整，请从列表进入' : '登录失败，请检查网络后重试';
 	}
 });
 </script>

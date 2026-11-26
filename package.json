@@ -5,9 +5,9 @@
 	"description": "uni-app B 端管理小程序通用模板（Vue 3 + uview-plus，多端：mp-weixin / h5 / app）",
 	"scripts": {
 		"dev:mp-weixin": "SASS_LEGACY_JS_API=silence uni -p mp-weixin",
-		"build:mp-weixin": "SASS_LEGACY_JS_API=silence uni build -p mp-weixin",
+		"build:mp-weixin": "node .claude/scripts/check_env.mjs && SASS_LEGACY_JS_API=silence uni build -p mp-weixin",
 		"dev:h5": "SASS_LEGACY_JS_API=silence uni -p h5",
-		"build:h5": "SASS_LEGACY_JS_API=silence uni build -p h5",
+		"build:h5": "node .claude/scripts/check_env.mjs && SASS_LEGACY_JS_API=silence uni build -p h5",
 		"verify:mp-weixin": "SASS_LEGACY_JS_API=silence uni build -p mp-weixin --mode development",
 		"verify:h5": "SASS_LEGACY_JS_API=silence uni build -p h5 --mode development",
 		"check:release": "node .claude/scripts/check_release.mjs",

@@ -15,6 +15,10 @@
 		<app-navbar title="演示" :show-back="true" />
 
 		<view class="demo__body">
+			<view v-if="guardError" class="card">
+				<app-list-state :error="guardError" @retry="retry" />
+			</view>
+
 			<!-- 当前权限点：改 config/demo.js 的 permission 后重进本页即可看到变化 -->
 			<view class="card">
 				<view class="card__hd">
@@ -113,7 +117,16 @@ const requestState = ref('');
 const resultText = ref('');
 
 // 登录门 + 权限门统一接线；onReady 在登录成功后重读权限点（页内区块据此显隐）
-usePageGuard({ path: PAGE_DEMO, onReady: () => { permission.value = getPermission(); } });
+const guardError = ref('');
+const { retry } = usePageGuard({
+	path: PAGE_DEMO,
+	onReady: () => {
+		permission.value = getPermission();
+	},
+	onDenied: (res) => {
+		guardError.value = res.reason === 'unresolved' ? '参数不完整' : '登录失败，请检查网络后重试';
+	}
+});
 
 /** 把响应压成可读的一小段（演示用，真实业务不要整包打印响应体） */
 function showResult(label, body) {

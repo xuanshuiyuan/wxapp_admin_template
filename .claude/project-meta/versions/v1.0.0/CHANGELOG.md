@@ -64,6 +64,18 @@ CLAUDE/QUICK_START/current_sprint 的 `DEMO_MODE` 描述改为环境变量口径
 - **自动闸门**：`check_system.mjs` 第 10 项扫描 `src/`，除 `services/http/transport.js` 外
   出现 `uni.request(` / `uni.uploadFile(` 即报错（防止绕过请求层）。
 
+## 二-d、评审非阻断建议批量处理（2026-11-26）
+
+| 项 | 处置 |
+|---|---|
+| `onDenied` 无人消费 | `usePageGuard` 增加 `retry()`；三个页面模板与 demo 页全部接 `onDenied`（登录失败 / 参数不完整落到错误态）+ `@retry` |
+| R-10 护栏条件 | `DEMO_MODE` 改为**白名单**：只有 `VITE_APP_ENV=development` 允许开启；新增 `check_env.mjs` 在 `build:*` 之前执行，带演示/联调旁路的包打不出来 |
+| `check:release` 平台键 | 支持 `-- mp-weixin/h5/app`，按端读 `VITE_HOST_*`；H5 同域允许 host 留空 |
+| `check:release` 分包 | 演示页扫描覆盖 `subPackages` |
+| `request` 204 / 数组 | 204 归一为 `{code:0,msg:'',data:null}`；`rawResponse:true` 提前放行（数组/纯文本第三方响应），业务接口仍严格要求 `{code,msg,data}` |
+| 模板返回刷新 | `page-form` 保存成功后补 `markListDirty(PAGE_LIST)` 示例注释 |
+| 闸门文档 | `check_release` 用法/说明与 README 自检命令对齐 |
+
 ## 三、验证
 
 | 项 | 命令 | 结果 |

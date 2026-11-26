@@ -2,12 +2,13 @@
 // ---------------------------------------------------------------------------
 // 发布产物体检（可执行闸门，替代「grep 一个写死的端口」）
 //
-// 检查三件事：
+// 检查四件事：
 //   ① 生产环境变量不允许出现演示/联调旁路（VITE_DEMO_MODE / MOCK_LOGIN_CODE / DEVELOP_BYPASS）；
-//   ② 生产域名已填（不是 REPLACE_*）；
-//   ③ 构建产物里没有 localhost / REPLACE_ / 演示 token，且确实包含生产域名。
+//   ② 当前平台的域名已填（不是 REPLACE_*；h5 允许留空走同域相对路径）；
+//   ③ 构建产物里没有 localhost / REPLACE_ / 演示 token，且确实包含生产域名；
+//   ④ pages.json（含 subPackages）里没有残留演示页。
 //
-// 用法：npm run build:mp-weixin && npm run check:release [-- mp-weixin]
+// 用法：npm run build:<端> && npm run check:release [-- mp-weixin|h5|app]
 // 退出码 1 = 不可发布。
 // ---------------------------------------------------------------------------
 
@@ -17,6 +18,13 @@ import { join, extname } from 'node:path';
 const ROOT = process.cwd();
 const platform = process.argv[2] || process.env.npm_config_platform || 'mp-weixin';
 const DIST = join(ROOT, 'dist/build', platform);
+// 每个端读自己的 host 键（H5 同域部署允许留空 → 走相对路径）
+const HOST_KEY = { 'mp-weixin': 'VITE_HOST_MP', h5: 'VITE_HOST_H5', app: 'VITE_HOST_APP' };
+const hostKey = HOST_KEY[platform];
+if (!hostKey) {
+	console.error(`❌ 未知平台 ${platform}（只支持 mp-weixin / h5 / app）`);
+	process.exit(1);
+}
 
 const errors = [];
 const infos = [];
@@ -46,13 +54,16 @@ if (prod.VITE_DEVELOP_BYPASS) {
 	errors.push('VITE_DEVELOP_BYPASS 非空：签名旁路只允许 local / develop');
 }
 
-const host = prod.VITE_HOST_MP || '';
-if (!host) {
-	errors.push('.env.production 的 VITE_HOST_MP 为空：小程序必须使用绝对地址');
+const host = prod[hostKey] || '';
+if (platform === 'h5' && !host) {
+	// H5 同域部署：留空 = 相对路径，合法
+	infos.push('H5 未配置 host（按同域相对路径部署）');
+} else if (!host) {
+	errors.push(`.env.production 的 ${hostKey} 为空：小程序/App 必须使用绝对地址`);
 } else if (/REPLACE_/.test(host)) {
-	errors.push(`VITE_HOST_MP 仍是占位值：${host}`);
+	errors.push(`${hostKey} 仍是占位值：${host}`);
 } else if (!/^https?:\/\//.test(host)) {
-	errors.push(`VITE_HOST_MP 必须是 http(s) 绝对地址：${host}`);
+	errors.push(`${hostKey} 必须是 http(s) 绝对地址：${host}`);
 }
 
 if (!existsSync(DIST)) {
@@ -98,10 +109,15 @@ try {
 			.replace(/\/\/.*$/gm, '')
 			.replace(/\/\*[\s\S]*?\*\//g, '')
 	);
-	const demo = (pages.pages || []).filter((p) => String(p.path || '').includes('pages/demo'));
+	// 主包 + 分包一起扫（演示页将来可能被移入分包）
+	const allPages = [...(pages.pages || [])];
+	for (const sp of pages.subPackages || []) {
+		for (const p of (sp && sp.pages) || []) allPages.push({ path: `${sp.root}/${p.path}` });
+	}
+	const demo = allPages.filter((p) => String(p.path || '').includes('demo'));
 	if (demo.length) {
 		errors.push(
-			`pages.json 仍注册了 ${demo.length} 个演示页：` +
+			`pages.json（含 subPackages）仍注册了 ${demo.length} 个演示页：` +
 				demo.map((p) => p.path).join(', ') +
 				' —— 发布前去演示化见 README §4.1'
 		);

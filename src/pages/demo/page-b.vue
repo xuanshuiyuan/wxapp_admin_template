@@ -13,6 +13,10 @@
 		<app-navbar title="示例页 B" :show-back="true" />
 
 		<view class="pb__body">
+			<view v-if="guardError" class="card">
+				<app-list-state :error="guardError" @retry="retry" />
+			</view>
+
 			<view class="card">
 				<view class="card__hd">
 					<text class="card__title">表单行（跳页编辑）</text>
@@ -63,7 +67,7 @@
 </template>
 
 <script setup>
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { editField } from '@/services/fieldEditor';
 import { pickRegion } from '@/services/regionPicker';
 import { usePageGuard } from '@/composables/usePageGuard';
@@ -85,7 +89,13 @@ const regionText = computed(() => [form.province, form.city, form.district].filt
 const formText = computed(() => JSON.stringify(form, null, 2));
 
 // 登录门 + 权限门统一接线（本页无首屏取数，故不传 onReady）
-usePageGuard({ path: PAGE_DEMO_B });
+const guardError = ref('');
+const { retry } = usePageGuard({
+	path: PAGE_DEMO_B,
+	onDenied: (res) => {
+		guardError.value = res.reason === 'unresolved' ? '参数不完整' : '登录失败，请检查网络后重试';
+	}
+});
 
 async function onEditName() {
 	const value = await editField({

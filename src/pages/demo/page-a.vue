@@ -31,7 +31,7 @@
 				:error="error"
 				:loading="loading"
 				:finished="finished"
-				@retry="reload"
+				@retry="retry"
 			/>
 
 			<view v-if="items.length" class="card pa__list">
@@ -89,8 +89,15 @@ const { items, loading, firstLoading, isEmpty, error, finished, reload } = useLi
 	immediate: false
 });
 
-// 登录门（onShow）+ 权限门（onLoad）统一接线；首次通过后才取数
-usePageGuard({ path: PAGE_DEMO_A, onReady: reload });
+// 登录门 + 权限门统一接线；首次通过后才取数。
+// onDenied 落到列表错误态；retry 同时兜住「门没过」与「取数失败」。
+const { retry } = usePageGuard({
+	path: PAGE_DEMO_A,
+	onReady: reload,
+	onDenied: (res) => {
+		error.value = res.reason === 'unresolved' ? '参数不完整' : '登录失败，请检查网络后重试';
+	}
+});
 
 /** 清空本地数据：下一次刷新即进入空态 */
 function onClear() {
