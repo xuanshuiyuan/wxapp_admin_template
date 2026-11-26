@@ -118,6 +118,7 @@ export function upload(filePath, type) {
 }
 ```
 
+- **请求体一律表单**（`x-www-form-urlencoded`；2026-11-26 定版），不提供 JSON 请求体。
 - 成功返回响应体 `{ code, msg, data }`，`code === 0`；失败**永远抛 `ApiError`**，
   按 `type`（`network` / `http` / `business` / `auth` / `guard`）分支。
 - options：`{ toast: false }` 静默 · `{ loading: true }` 托管 loading ·

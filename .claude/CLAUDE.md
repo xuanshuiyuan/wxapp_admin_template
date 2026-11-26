@@ -110,7 +110,7 @@ api/<域>.js  →  curl.get / post / upload
 - 关键 options：`{ toast:false }` 静默 · `{ loading:true }` 托管 loading ·
   `{ authRetry:false }`（登录/绑定**必传**） · `{ guard:false }` 豁免全局守卫。
 - **接口 URL 一律先登记 `config/endpoints.js`**，再在 `api/<域>.js` 包方法。禁止在页面里写路径字符串。
-- **请求方式**：读接口 `curl.get`；业务写 / 查询 `curl.post`（form-urlencoded）；
+- **请求方式（2026-11-26 定版：表单，不是 JSON）**：读接口 `curl.get`；业务写 / 查询 `curl.post`（form-urlencoded）；
   上传 `curl.upload`（multipart，**一次一个文件**）。**不提供 `postJSON`**（后端统一表单解码）；
   第三方 JSON 接口只能在 api 层显式 `request({ contentType:'application/json', rawResponse:true })`。
   响应统一 `{ code, msg, data }`：缺 `code` 的对象按「响应格式异常」抛错，不再当成功。

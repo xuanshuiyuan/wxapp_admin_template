@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // http 层唯一出口：api/ 里只 import 这个文件。
 //
-// ★ 请求结构统一约定（全工程只允许这三条形态）：
+// ★ 请求结构统一约定（全工程只允许这三条形态；2026-11-26 定版 = **表单，不是 JSON**）：
 //   · 读接口        curl.get(url, params)      → GET + query（数组一律逗号串）
 //   · 业务写 / 查询 curl.post(url, data)       → POST + application/x-www-form-urlencoded
 //   · 文件上传      curl.upload(payload, url)  → POST + multipart/form-data（一次一个文件）
