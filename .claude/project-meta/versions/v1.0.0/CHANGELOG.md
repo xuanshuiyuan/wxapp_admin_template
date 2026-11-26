@@ -98,7 +98,9 @@ CLAUDE/QUICK_START/current_sprint 的 `DEMO_MODE` 描述改为环境变量口径
    `pages.json` 加 `subPackages` + demo/page-b 预下载；主包 1.4M / 分包 152K（构建实测）；K-100 关闭。
 4. tabBar：暂缓（无导航设计）。
 5. vitest：暂缓（接真实业务前再装）。
-6. **后端 `POST /admin/upload` 已派单**给后端窗口（契约 `data.url` + 40203/40204/40205/40001/60004），待回。
+6. **后端 `POST /admin/upload` 已完成**（`go_project_template` master `0a47fee`，已推）：
+   `data = { type, url, urls }`（url 为准）、错误码五档与前端逐档一致、`AuthApiNoVerification` 免权限点（token 照验）、
+   类型由 `conf.AdminUploadTypes` 驱动。前端无需调整，README §5.3 已同步真实契约；端到端需真实 OSS 凭据。
 7. **文档漂移自动检查已实现**：`check_system.mjs` 新增第 9 项（内部路径存在性 + 陈旧值黑名单，排除 versions/ 历史报告）。
 
 ## 五、评审

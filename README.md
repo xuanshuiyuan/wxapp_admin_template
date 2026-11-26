@@ -263,14 +263,19 @@ npm run build:mp-weixin && npm run check:release
 `conf.AdminUploadTypes` 里注册（目录 + 格式白名单 + 大小上限），前端 `type` 传同一个键
 （前端在 `config/dict.js` 的 `UPLOAD_TYPE_DEFS` 镜像同一份白名单 / 限额）。
 
-**响应契约**（新项目必须按此返回；后端模板尚未实现该控制器）：
+**响应契约**（后端模板 `go_project_template` master `0a47fee` 已实现 `POST /v2/admin/upload`）：
 
 ```json
-{ "code": 0, "msg": "ok", "data": { "url": "https://oss.example.com/demo_file/xxx.png" } }
+{ "code": 0, "msg": "ok",
+  "data": { "type": "demo_file", "url": "https://oss.../xxx.png", "urls": ["https://oss.../xxx.png"] } }
 ```
 
-前端兼容 `data.urls[0]`（多图接口写法），但**以 `data.url` 为准**。
-失败码按 `40203`（格式）/ `40204`（大小）/ `40205`（频控）/ `40001`（类型未注册）/ `60004`（通用）分档。
+- **以 `data.url` 为准**（`data.urls[0]` 同值，前端双读兼容）
+- 失败码：`40203` 格式 / `40204` 超限 / `40205` 频控（按管理员每分钟 30 次）/ `40001` type 未注册 / `60004` 其他（OSS 故障，原始错误只进后端日志）
+- 权限口径：该接口在 `conf.AuthApiNoVerification`（**免权限点、token 照验**）—— 上传只写 OSS，「能否被引用」由后续业务接口的权限点把关；前端不依赖权限点
+- 新增上传类型：后端 `conf.AdminUploadTypes` 加一行 + 前端 `config/dict.js` 的 `UPLOAD_TYPE_DEFS` 加一行（格式/限额两端一致），路由与控制器不用动
+- ⚠️ 端到端需真实 OSS 凭据（`internal/conf/<env>/oss.go`）；占位凭据下合法文件会止步 `60004`
+
 前端链路：`<app-uploader v-model="files" type="demo_file" />`。
 
 ### 5.4 连通性自测（可选）
