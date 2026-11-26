@@ -1,0 +1,100 @@
+{
+	"easycom": {
+		"autoscan": true, // components/组件名/组件名.vue 自动注册，页面无需 import
+		"custom": {
+			"^u--(.*)": "@/uni_modules/uview-plus/components/u-$1/u-$1.vue",
+			"^up-(.*)": "@/uni_modules/uview-plus/components/u-$1/u-$1.vue",
+			"^u-([^-].*)": "@/uni_modules/uview-plus/components/u-$1/u-$1.vue"
+		}
+	},
+	"pages": [
+		{
+			// 首页（工作台）：极光头部 + 宫格入口，自绘头部 → custom
+			"path": "pages/admin-home/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "管理端模板",
+				// ⚠️ custom 下系统仍按它决定状态栏文字色；本页顶部是极光紫 → 必须 white
+				"navigationBarTextStyle": "white",
+				"backgroundColor": "#FAFAFE",
+				"backgroundColorTop": "#6D5BFF"
+			}
+		},
+		{
+			// 绑定管理员账号页：整屏极光底 → custom；上下回弹都是极光紫
+			"path": "pages/bind/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "绑定管理员账号",
+				"navigationBarTextStyle": "white",
+				"backgroundColor": "#6D5BFF",
+				"backgroundColorTop": "#6D5BFF"
+			}
+		},
+		{
+			// 演示页：二级页口径（白顶栏 + 浅底 + 白卡）
+			"path": "pages/demo/list",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "演示",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#FAFAFE",
+				"backgroundColorTop": "#FAFAFE"
+			}
+		},
+		{
+			"path": "pages/demo/page-a",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "示例页 A",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#FAFAFE",
+				"backgroundColorTop": "#FAFAFE"
+			}
+		},
+		{
+			"path": "pages/demo/page-b",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "示例页 B",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#FAFAFE",
+				"backgroundColorTop": "#FAFAFE"
+			}
+		},
+		{
+			// 通用字段编辑页：页面级滚动（键盘弹起时整页要能上滚）
+			"path": "pages/common/field-editor",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "编辑",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#FAFAFE",
+				"backgroundColorTop": "#FAFAFE"
+			}
+		},
+		{
+			// 省 / 市 / 区选择页：页面级滚动（picker-view 需要整屏高度）
+			"path": "pages/common/region-picker",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "选择地区",
+				"navigationBarTextStyle": "black",
+				"backgroundColor": "#FAFAFE",
+				"backgroundColorTop": "#FAFAFE"
+			}
+		}
+	],
+	// ⚠️ **未开 tabBar**。将来要加：本文件加 tabBar 段（iconPath 需 static/tabbar/ 实体图标），
+	//    并同步 services/route.js 的 TAB_PAGES 数组 —— 漏改那里会让 route.to 走 navigateTo 跳 tab 页而失败。
+	// ⚠️ 将来加分包时：subPackages 段 + preloadRule 两处一起配。
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "管理端模板",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#FAFAFE",
+		"backgroundColorTop": "#FAFAFE",
+		"backgroundColorBottom": "#FAFAFE"
+	},
+	"uniIdRouter": {}
+}

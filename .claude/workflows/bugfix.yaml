@@ -1,0 +1,170 @@
+# ---------------------------------------------------------------------------
+# bugfix 工作流 —— 缺陷修复
+#
+# 本文件只定义「顺序 · 角色 · 闸门 · 产物」，不写任何业务实现与命令参数。
+# 核心特征：debugger 必须先给出「有证据的根因」，未确证不许开修。
+# ---------------------------------------------------------------------------
+
+version: 1
+name: bugfix
+description: "缺陷修复链路：根因定位（需证据）→ 定责 → 最小修复 → 回归用例 → 安全复核 → 评审"
+applies_to: ["uni-app", "vue3", "go", "java", "python", "php", "node"]
+last_updated: "2026-10-26"
+
+trigger:
+  when:
+    - "有明确的现象异常（报错 / 行为不符预期 / 偶现问题）"
+    - "线上/真机问题需要定位"
+    - "「改了没生效」类问题"
+  not_when:
+    - "需求变更（那是 feature）"
+    - "行为正确但代码丑（那是 refactor）"
+
+preconditions:
+  - id: symptom_specific
+    check: "现象是否足够具体（端 mp/h5/app · 环境 dev/prod · 操作路径 · 期望 vs 实际 · 报错原文）"
+    required: true
+    on_missing: "向用户索取；信息不足不许猜（debugger 铁律）"
+
+stages:
+  - id: 1_diagnose
+    agent: debugger
+    purpose: "定位根因（先查历史 → 复现 → 假设 → 取证 → 定根因）"
+    inputs:
+      - "具体现象描述"
+      - "memory/bug_history.md（★ 优先查，可能已踩过）"
+      - "memory/known_issues.md"
+    outputs:
+      - "根因报告：现象 / 根因 / 证据链 / 已排除假设 / 待验证假设 / 最小修复方案"
+      - "归责结论（契约层 / 服务层 / 数据层 / 界面层 / 环境口径）"
+    gate:
+      id: gate_diagnose
+      criteria:
+        - "根因收敛到一处，一句话能说清"
+        - "证据链含 file:line 或命令输出，非纯叙述"
+        - "「已排除的假设」表已填（证明排除了什么）"
+        - "无法本地验证的（真机/多端/签名）已如实标注「未确证」"
+      on_fail: "退回 debugger 补证据；★ 不许用「可能/大概」当结论"
+
+  - id: 2_route
+    agent: debugger
+    purpose: "按归责结论把修复分派给对应实现角色"
+    depends_on: [1_diagnose]
+    outputs:
+      - "归责映射：契约层→api_designer · 服务层→backend_service · 数据层→repository_agent · 界面层→frontend_engineer · 环境口径→deploy_agent"
+    gate:
+      id: gate_route
+      criteria:
+        - "归责有证据支撑，不是「顺手都改一遍」"
+        - "用户已确认根因结论（高风险场景必须确认）"
+      on_fail: "回到 1_diagnose 重新归责"
+
+  - id: 3_fix
+    agent: "backend_service | frontend_engineer | repository_agent | api_designer"
+    purpose: "最小修复（只修 bug，不重构、不顺手改风格）"
+    depends_on: [2_route]
+    inputs:
+      - "debugger 的最小修复方案"
+      - "相关源码"
+    outputs:
+      - "修复代码（精确 diff）"
+      - "修复说明：改了什么 / 为什么 / 影响面 / 回滚方式"
+    gate:
+      id: gate_fix
+      criteria:
+        - "改动范围 = 最小修复方案范围，未扩大"
+        - "未顺手重构、未改格式化、未改不相关文件"
+        - "未在 src/uni_modules/ 下改任何东西"
+        - "修复的是根因，不是症状（未用 try/catch 吞、未加延时掩盖）"
+      on_fail: "退回实现角色收窄范围"
+
+  - id: 4_regression
+    agent: test_agent
+    purpose: "补回归用例（★ 防止同一 bug 二次出现；默认只生成不执行）"
+    depends_on: [3_fix]
+    inputs:
+      - "根因报告 + 修复 diff"
+      - "memory/bug_history.md"
+    outputs:
+      - "回归用例（覆盖本次根因的触发条件）"
+      - "该 bug 的复现与验证步骤（供用户执行）"
+      - "同类风险排查清单（同一根因模式是否在别处也存在）"
+    gate:
+      id: gate_regression
+      criteria:
+        - "回归用例能覆盖本次根因的触发条件"
+        - "已排查「同一根因模式是否在别处存在」"
+        - "未覆盖项已声明"
+    on_fail: "退回 test_agent"
+    notes: "★ 只生成。执行需用户明确要求"
+
+  - id: 5_security
+    agent: security_agent
+    purpose: "安全复核（判定本次修复是否引入新风险面，或绕过安全动作）"
+    depends_on: [4_regression]
+    inputs:
+      - "修复 diff"
+    outputs:
+      - "风险清单 + 结论（通过 / 阻断）"
+    gate:
+      id: gate_security
+      criteria:
+        - "修复未绕过鉴权 / 守卫 / 会话校验来「让问题消失」"
+        - "未把敏感信息写进日志或注释"
+        - "若根因涉及安全（越权/泄漏/绕过）→ 已登记为风险"
+      on_fail: "阻断，上报用户"
+    condition: "仅在修复触及登录态 / 请求链路 / 全局守卫 / 数据存储 / 敏感信息时执行"
+
+  - id: 6_review
+    agent: reviewer
+    purpose: "★ 最后一步：代码评审"
+    review_confirmation:
+      ask: "收尾时问用户一次：是否评审？要做请在本仓新开窗口（评审必须新开窗口；代码窗口不自评）"
+      on_decline: "跳过本阶段，记录「评审：跳过（用户确认）」"
+      rules: "project-dev 步骤 12.5；报告写 versions/vN/review*.md，结论回 versions/vN/CHANGELOG.md「评审」小节"
+    depends_on: [5_security]
+    inputs:
+      - "git diff（修复 + 回归用例）"
+      - "根因报告"
+    outputs:
+      - "评审报告：结论 / 阻断项 / 建议项 / 已核对通过项 / 未审查范围"
+    gate:
+      id: gate_review
+      criteria:
+        - "无阻断项"
+        - "修复范围最小，无顺手改动"
+        - "若属真重要变更（口径/权限/接口），已在 commit message 写一行；普通修复不记"
+        - "已补 .claude/memory/bug_history.md 条目"
+      on_fail: "打回对应阶段"
+
+quality_gates:
+  - "评审确认（review_confirmation）：收尾先问用户是否评审，用户说不做则记录跳过"
+  - "根因确认（gate_diagnose）：必须有证据，未确证不许开修"
+  - "归责准确（gate_route）：改对地方，不是全改一遍"
+  - "最小修复（gate_fix）：范围不扩大"
+  - "回归覆盖（gate_regression）：同根因不再复现"
+  - "安全不退化（gate_security）：未绕过安全动作"
+  - "评审通过（gate_review）：无阻断项"
+
+finalization:
+  - action: "按 CLAUDE.md §11.1：真重要变更在 commit message 写一行；普通修复不记"
+    required: true
+  - action: "补 .claude/memory/bug_history.md 条目（现象 / 根因 / 修复 / 防复发措施）"
+    required: true
+  - action: "若根因暴露了规则盲区 → 更新 .claude/rules/ 或 .claude/CLAUDE.md §9"
+    required: false
+
+# ── 本项目高频根因速查（debugger 起手清单） ───────────────────────────────
+known_root_cause_patterns:
+  - "环境口径搞混：跑了 verify:* 却当 build:* 用 → grep localhost:15200 dist/"
+  - "options 漏传：authRetry:false（递归登录）/ guard:false（装饰位弹阻断框）"
+  - "端差异漏出：该收进 services/platform.js 的 #ifdef 写在了页面"
+  - "绕过存储层：直读 getStorageSync 导致真相源分裂"
+  - "pages.json 未登记 / tabBar 未同步 TAB_PAGES → route.to 跳页失败"
+  - "类名撞 ColorUI（如 .fr）导致布局失效"
+  - "edition 改值未与后端确认 → Im Invalid Request!"
+  - "守卫 busy 去重 + 1s 冷静期被误判为「没弹框」"
+
+parallel:
+  - stages: [4_regression, 5_security]
+    note: "安全复核与回归用例可并行"

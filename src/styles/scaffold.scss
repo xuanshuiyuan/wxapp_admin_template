@@ -1,0 +1,718 @@
+// ---------------------------------------------------------------------------
+// 脚手架通用版式（组件级样式）—— 「流光玻璃」Aurora Glass 版式库（管理端）
+// 色值/字号/间距一律取 common/css/theme.scss 的 token（经 uni.scss 注入，无需 import）。
+//
+// 与 base.scss 的分工：
+//   base.scss  = 页面默认 + 语义文字类 + 原子类
+//   scaffold   = 成块的版式（.page .glass .card .stats .entry .rows .btn .field …）
+// 页面里优先用这里的类，只有微调才写 scoped 样式。
+//
+// ★ 本文件是 docs/design/c-aurora-glass/ 两份设计稿的「块级落地」：
+//   绑定页（极光底 + 玻璃卡 + 填充输入 + 渐变 CTA；原设计稿那份是「登录页」，
+//    管理端登录已改微信静默、该页整页删除，职责由 pages/bind 承接 —— 见 CHANGELOG v1.0.0）
+//   首页（极光头部 + 骑缝玻璃数字条 + 2×4 宫格入口 + 紧凑列表行）
+//
+// ⚠️ 若同一产品还有 C 端小程序，两端视觉**可以有意分化**：C 端那套「浅色 HUD 座舱」
+//    （.hud-frame / .hud-panel / .hud-tile 双层斜切 + 流光描边 + 瓷面）在本文件里
+//    **已整体删除**，不要从 C 端同步回来（用户 2026-10-26 定，见 rules/architecture.md §7）。
+// ---------------------------------------------------------------------------
+
+/* ---------------- 页面骨架 ---------------- */
+
+.page {
+	min-height: 100vh;
+	box-sizing: border-box;
+	padding: $page-padding $page-padding $sp-10;
+	background-color: $bg-page;
+}
+
+/* 极光底：品牌底 / 头部唯一配方（两枚光斑 + 一条 160° 三停渐变，见 theme.scss $bg-aurora）。
+   加在**页根**上（.page-shell / 品牌页根，都是 100vh）—— 铺满视口，滚动时底下一直是它。
+
+   ⚠️ 两枚光斑的百分比是**相对元素盒子**算的，所以：元素高度一变，光斑位置就变。
+      当前两个页面都把极光挂在定高 100vh 的页根上，故不漂移、**不需要** background-size 锁。
+      但**将来**若把它挂到「高度随内容增长」的块上（如某个很高的卡片），必须补一行
+      `background-size: 100% <固定盒高>;`（设计稿对两个页面就是这么锁的），否则光斑会散开。
+   ⚠️ 小程序端多图层 background 简写支持良好，但**不要在它之上叠 animation**（整屏重绘）。 */
+.aurora-bg {
+	background: $bg-aurora;
+}
+
+/* 极光上的文字：一律白，次要字用 78% 白（压在渐变上，深字对比不足） */
+.on-aurora {
+	color: $text-on-aurora;
+}
+
+.on-aurora-2 {
+	color: $text-on-aurora-2;
+}
+
+/* 视口锁定页壳（滚动走内部 scroll-view 的页面用；顶栏/头部在流内） */
+.page-shell {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	overflow: hidden;
+}
+
+/* ★ 滚动容器用**普通块**（不要写成 flex 容器）：
+   列向 flex 容器一旦有确定高度，带 overflow 非 visible 的子元素会失去「自动最小高度」被压扁
+   （本仓已踩两次：app 里的 .u-popup、设计稿 A 的横滑条）。让滚动滚动、内容容器负责排列，各司其职。 */
+.page-shell__scroll {
+	flex: 1;
+	min-height: 0;
+}
+
+/* ★ 内容 wrapper 用**列向 flex**：flex 项的负外边距不与容器合并，
+   骑缝卡（.glass--railed）的 -32rpx 才真的把卡压过交界线。
+   ⚠️ 这里是普通块时的老坑：首子元素的负上边距会与容器合并、把整个内容区一起上拽
+   （设计稿 C 第一版就中过这一枪，骑缝根本没发生），故**必须**是 flex 容器。 */
+.page-shell__body {
+	display: flex;
+	flex-direction: column;
+	padding: $sp-3 $page-padding 0;
+}
+
+/* ---------------- 卡片 ---------------- */
+
+.card {
+	background-color: $bg-card;
+	border-radius: $rd-card;
+	padding: $card-padding;
+	margin-bottom: $card-gap;
+	box-shadow: $shadow-card;
+}
+
+.card__hd {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: $sp-3;
+}
+
+/* 卡头标题：本体系**不用左侧竖条**（那是被替换掉的旧语言），靠字号字重分层 */
+.card__title {
+	font-size: $fs-label; // 29rpx（15px）
+	font-weight: $fw-semibold;
+	color: $text-title;
+	line-height: $lh-label;
+}
+
+.card__more {
+	font-size: $fs-caption; // 23rpx（12px）
+	color: $color-primary;
+	line-height: $lh-caption;
+}
+
+/* ---------------- 玻璃卡（骑缝主卡） ---------------- */
+
+/* ⚠️ 两行必须都在、且顺序不能反：不透明档在前、玻璃档在后。
+   微信小程序端不支持 backdrop-filter，会退化成第一行的近实心白 —— 真机比稿子更「实」，
+   这是预期降级（与 safe-area 的两行回退同一思路，见 theme.scss） */
+.glass {
+	position: relative;
+	border-radius: $rd-card;
+	padding: $sp-4 $sp-5;
+	box-shadow: $shadow-glass;
+	background: $glass-bg-fallback;
+	background: $glass-bg;
+	backdrop-filter: $glass-blur;
+	-webkit-backdrop-filter: $glass-blur;
+	border: 1rpx solid $glass-line;
+}
+
+/* 骑缝：卡上沿压过「极光头部 / 内容区」的交界线，做出玻璃浮在品牌底上的层次。
+   ⚠️ 只有当父容器是 flex 容器（.page-shell__body）时才成立；放在普通块容器里
+      这条负边距会与容器合并、把整个内容区一起上拽（骑缝消失，且会压住头部文字）。
+   ⚠️ 压入量以「卡内首行文字不压到交界线以上」为准 —— 稿内实算 16px→32rpx 时净空约 11rpx。 */
+.glass--railed {
+	margin-top: -$sp-4;
+}
+
+/* ---------------- 区块头（无卡区块用） ---------------- */
+
+.sect {
+	margin-bottom: $sp-3;
+}
+
+.sect__hd {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: $sp-3;
+}
+
+.sect__title {
+	font-size: $fs-label; // 29rpx（15px）
+	font-weight: $fw-semibold;
+	color: $text-title;
+	line-height: $lh-label;
+}
+
+.sect__more {
+	font-size: $fs-caption;
+	color: $color-primary;
+}
+
+/* ---------------- 单行指标条（四段等分） ---------------- */
+
+/* 设计稿首页的「一行背景信息」：四个指标压成一条，段间 1px 竖发丝线。
+   ★ 用 flex + 四等分，不要做成 4 张卡或 2×2（那是被替换掉的旧版式）。 */
+.stats {
+	display: flex;
+	align-items: stretch;
+}
+
+.stat {
+	flex: 1 1 0;
+	min-width: 0; // 不加会被长数字顶破等分（flex 项默认 min-width:auto）
+	padding: 0 $sp-2;
+	border-left: 1rpx solid $divider-color;
+
+	&:first-child {
+		padding-left: 0;
+		border-left: none;
+	}
+
+	&:last-child {
+		padding-right: 0;
+	}
+}
+
+.stat__label {
+	display: block;
+	font-size: $fs-caption; // 23rpx（12px）
+	color: $text-sub;
+	line-height: $lh-caption;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.stat__value {
+	display: block;
+	margin-top: $sp-1;
+	font-size: $fs-display; // 38rpx（20px）
+	font-weight: $fw-semibold;
+	color: $text-title;
+	line-height: $lh-display;
+	font-variant-numeric: tabular-nums;
+}
+
+/* 金额段专用档：¥86,400 是 7 位，20px 在 1/4 栏里会顶破等分线（稿内实测），降一档 */
+.stat__value--wide {
+	font-size: $fs-price; // 35rpx（18px）
+	letter-spacing: -1rpx;
+}
+
+.stat__delta {
+	display: block;
+	margin-top: $sp-0-5;
+	font-size: $fs-micro; // 21rpx（11px）
+	line-height: $lh-micro;
+}
+
+/* 环比涨跌走**纯色文字**而非 chip：指标已退为背景信息，挂 chip 会把注意力拉回来 */
+.stat__delta--up {
+	color: $color-success;
+}
+
+.stat__delta--down {
+	color: $color-danger;
+}
+
+/* ---------------- 宫格入口（2 列大格） ---------------- */
+
+/* 每格是**独立卡**（不是一张卡里切格）：格与格之间的留白参与了节奏。
+   内部左对齐纵向堆叠 —— 居中会让「名称 + 副说明」两行长短不齐时读起来散 */
+.entry-grid {
+	display: flex;
+	flex-wrap: wrap;
+	margin: 0 (-$sp-1-5) $card-gap;
+}
+
+.entry {
+	box-sizing: border-box;
+	width: 50%;
+	padding: $sp-1-5;
+}
+
+.entry__inner {
+	box-sizing: border-box;
+	background-color: $bg-card;
+	border-radius: $rd-card;
+	box-shadow: $shadow-entry;
+	padding: $sp-2 $sp-3;
+	/* ★ 所有入口卡统一高度（用户 2026-11-05 定）：
+	   子菜单型入口的副说明（如「管理员设置 · 角色设置 · 日志管理」）在半屏宽的卡里
+	   会折成两行，只把那一张卡撑高 → 网格底部参差，模块越多越乱。
+	   高度 = 上下内距 32 + 图标盘 80 + 盘下距 16 + 名称行 38 + 副说明 4+31 = 201rpx。
+	   ⚠️ 名称与副说明都已被下面两条规则限制为单行，故这里给 min-height 即可；
+	      不用 height：字体放大 / 无障碍模式下不至于把内容裁掉。 */
+	min-height: 201rpx;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	transition: transform $duration-fast $ease-standard;
+}
+
+.entry__inner--hover {
+	transform: translateY(-2rpx);
+}
+
+.entry__disc {
+	width: $size-icon-disc; // 80rpx（40px）
+	height: $size-icon-disc;
+	border-radius: $rd-pill;
+	background-color: $color-primary-soft;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: $sp-2;
+}
+
+.entry__name {
+	/* min-width: 0 是让 flex 子项可收缩的前提（默认 min-width:auto 不肯低于内容宽），
+	   否则超长名称会把同行右侧的「N 项」徽标挤出卡片，而不是省略号 */
+	flex: 0 1 auto;
+	min-width: 0;
+	font-size: $fs-lead; // 27rpx（14px）
+	font-weight: $fw-semibold;
+	color: $text-title;
+	line-height: $lh-lead;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.entry__desc {
+	/* 副说明限单行省略：卡高已固定，多出来的子项名由标题行的「N 项」徽标承载 */
+	display: block;
+	width: 100%;
+	margin-top: $sp-0-5;
+	font-size: $fs-caption; // 23rpx（12px）
+	color: $text-muted;
+	line-height: $lh-caption;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* ---------------- 列表行（待办 / 动态） ---------------- */
+
+.rows {
+	display: flex;
+	flex-direction: column;
+}
+
+.row {
+	display: flex;
+	align-items: flex-start;
+	padding: $sp-2 0;
+	border-bottom: 1rpx solid $divider-color;
+}
+
+/* 末行去线：由使用方显式加 `--last`（结构伪类在小程序端不可靠，本仓既有约定） */
+.row--last {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.row__main {
+	flex: 1;
+	min-width: 0;
+}
+
+.row__title {
+	display: block;
+	font-size: $fs-lead; // 27rpx（14px）
+	color: $text-title;
+	line-height: $lh-lead;
+}
+
+.row__desc {
+	display: block;
+	margin-top: $sp-0-5;
+	font-size: $fs-caption; // 23rpx（12px）
+	color: $text-muted;
+	line-height: $lh-caption;
+}
+
+.row__side {
+	flex-shrink: 0;
+	margin-left: $sp-2;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+}
+
+.row__time {
+	font-size: $fs-micro; // 21rpx（11px）
+	color: $text-muted;
+	line-height: $lh-micro;
+	font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- 标签 / 徽标 ---------------- */
+
+/* 标签底一律从状态色推导（rgba token），换色不用回来改 */
+.tag {
+	display: inline-flex;
+	align-items: center;
+	height: $size-chip-h; // 36rpx（18px）
+	padding: 0 $sp-1-5;
+	border-radius: $rd-chip; // 12rpx（6px）
+	font-size: $fs-micro; // 21rpx（11px）
+	font-weight: $fw-semibold;
+	line-height: 1;
+
+	&--ok {
+		background-color: $color-success-light;
+		color: $color-success;
+	}
+
+	&--warn {
+		background-color: $color-warning-light;
+		color: $color-warning;
+	}
+
+	&--danger {
+		background-color: $color-danger-light;
+		color: $color-danger;
+	}
+
+	&--info {
+		background-color: $bg-fill;
+		color: $text-sub;
+	}
+
+	/* 品牌档（浅紫底 + 主色字）：表达「这是哪一类」（分类标记），**不是**状态。
+	   ⚠️ 与 --ok/--warn/--danger 分工：那三档说「什么状态」，这一档说「属哪类」——
+	   将来有真实状态字段（待处理/已联系…）时，另起语义色 chip，两者别混用（2026-10-26 设计稿口径） */
+	&--brand {
+		background-color: $color-primary-light;
+		color: $color-primary;
+	}
+}
+
+/* ---------------- 头像 ---------------- */
+
+.avatar {
+	width: $size-avatar; // 68rpx（34px）
+	height: $size-avatar;
+	border-radius: $rd-pill;
+	background-color: $color-primary-soft;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: $fs-body;
+	font-weight: $fw-semibold;
+	color: $color-primary;
+}
+
+/* 极光上的头像：玻璃底 + 白字（压在渐变上，浅底会糊） */
+.avatar--aurora {
+	background-color: rgba(255, 255, 255, 0.24);
+	color: $text-on-aurora;
+}
+
+/* ---------------- 按钮 ---------------- */
+
+.btn {
+	height: 80rpx;
+	padding: 0 $sp-4;
+	border: none;
+	border-radius: $rd-control;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: $fs-body;
+	font-weight: $fw-medium;
+	color: $text-title;
+	background-color: $bg-fill;
+	font-family: inherit;
+	line-height: 1;
+
+	/* MP <button> 自带 ::after 内描边，不清掉圆角边缘会发白 */
+	&::after {
+		border: none;
+	}
+}
+
+.btn--hover {
+	opacity: 0.86;
+}
+
+/* 主 CTA：极光渐变 + 白字 + 彩色柔影（设计稿唯一使用渐变按钮的地方） */
+.btn--aurora {
+	background: $bg-aurora-cta;
+	color: $text-on-primary;
+	font-weight: $fw-semibold;
+	box-shadow: $shadow-cta;
+}
+
+.btn--primary {
+	background-color: $color-primary;
+	color: $text-on-primary;
+	font-weight: $fw-semibold;
+}
+
+.btn--ghost {
+	background-color: $bg-card;
+	border: 1rpx solid $border-color;
+	color: $text-sub;
+}
+
+.btn--soft {
+	background-color: $color-primary-light;
+	color: $color-primary;
+}
+
+.btn--sm {
+	height: 52rpx;
+	padding: 0 $sp-3;
+	font-size: $fs-caption;
+	border-radius: $rd-chip;
+}
+
+.btn--lg {
+	width: 100%;
+	height: $size-cta-h; // 92rpx（48px）
+	padding: 0 $sp-6;
+	font-size: $fs-cta; // 33rpx（17px）
+}
+
+.btn--block {
+	width: 100%;
+}
+
+.btn-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+/* ---------------- 表单（绑定页 / 列表筛选） ---------------- */
+
+.field {
+	margin-bottom: $sp-3;
+}
+
+.field__label {
+	display: block;
+	margin-bottom: $sp-1;
+	font-size: $fs-caption; // 23rpx（12px）
+	color: $text-sub;
+	line-height: $lh-caption;
+}
+
+/* 输入框：填充式浅底 + 发丝描边。
+   ⚠️ 常态就带 1rpx **透明**描边：聚焦时只换颜色不换宽度，否则会整块位移 1rpx */
+.field__box {
+	display: flex;
+	align-items: center;
+	height: $size-control-h; // 88rpx（46px）
+	padding: 0 $sp-3;
+	border: 1rpx solid transparent;
+	border-radius: $rd-control;
+	background-color: $bg-fill;
+	box-sizing: border-box;
+}
+
+/* 聚焦态：主色描边 + 光圈（设计稿写的是 3px 光圈，这里等比到 rpx） */
+.field__box--focus {
+	border-color: $color-primary;
+	box-shadow: 0 0 0 6rpx $color-primary-ring;
+}
+
+.field__input {
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	font-size: $fs-lead; // 27rpx（14px）
+	color: $text-title;
+	background: transparent;
+	border: none;
+}
+
+.field__eye {
+	flex-shrink: 0;
+	margin-left: $sp-2;
+	width: 44rpx;
+	height: 44rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* ---------------- 勾选行（记住账号 / 忘记密码） ---------------- */
+
+.checkline {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin: $sp-2 0 $sp-4;
+}
+
+.checkline__left {
+	display: flex;
+	align-items: center;
+}
+
+/* 勾选框：方形小控件（本体系不施胶囊；尺度表里没有比 6px 更小的圆角档） */
+.checkbox {
+	width: 32rpx;
+	height: 32rpx;
+	margin-right: $sp-1;
+	border: 2rpx solid $border-color;
+	border-radius: 8rpx;
+	box-sizing: border-box;
+	background-color: $bg-card;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.checkbox--on {
+	border-color: $color-primary;
+	background-color: $color-primary;
+}
+
+.checkline__text {
+	font-size: $fs-caption; // 23rpx（12px）
+	color: $text-sub;
+}
+
+.checkline__link {
+	font-size: $fs-caption;
+	color: $color-primary;
+}
+
+/* ---------------- 键值行 ---------------- */
+
+.kv {
+	display: flex;
+	align-items: flex-start;
+	padding: $sp-1 0;
+	font-size: $fs-body; // 25rpx（13px）
+	line-height: $lh-body;
+}
+
+.kv__k {
+	width: 170rpx;
+	flex-shrink: 0;
+	color: $text-sub;
+}
+
+.kv__v {
+	flex: 1;
+	color: $text-title;
+	word-break: break-all;
+}
+
+/* ---------------- 状态块 / 辅助 ---------------- */
+
+.state {
+	padding: $sp-8 $sp-6;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.state__text {
+	margin-top: $sp-3;
+	font-size: $fs-body;
+	color: $text-muted;
+}
+
+.state__retry {
+	margin-top: $sp-4;
+	padding: $sp-2 $sp-6;
+	border-radius: $rd-pill;
+	background-color: $color-primary-light;
+	color: $color-primary;
+	font-size: $fs-body;
+}
+
+.more {
+	padding: $sp-4 0;
+	text-align: center;
+	font-size: $fs-body;
+	color: $text-muted;
+}
+
+.tip {
+	margin-top: $sp-3;
+	padding: $sp-3 $sp-4;
+	border-radius: $rd-chip;
+	background-color: $color-warning-light;
+	font-size: $fs-caption;
+	line-height: $lh-base;
+	color: $color-warning;
+}
+
+.divider {
+	height: 1rpx;
+	background-color: $divider-color;
+	margin: $sp-3 0;
+}
+
+/* 页脚版本号 / 声明（设计稿两页最末都有） */
+.version {
+	display: block;
+	padding: $sp-5 0 $sp-4;
+	text-align: center;
+	font-size: $fs-micro; // 21rpx（11px）
+	color: $text-muted;
+	line-height: $lh-micro;
+}
+
+/* 底部安全区（值取 theme.scss 的 $safe-bottom，页面别自己写 env()） */
+.safe-bottom {
+	/* 两行写法缺一不可（纯 rpx 回退 + 叠安全区），见 theme.scss $bottom-bar-gap 注释 */
+	padding-bottom: $bottom-bar-gap;
+	padding-bottom: calc(#{$bottom-bar-gap} + #{$safe-bottom});
+}
+
+/* ---------------- 长文本段落（帖子正文等纯文本逐段渲染） ----------------
+   后端已把正文归一并按 `\n\n` 分段（跨端口径，见 modules/operation 的
+   community-post-content-format），前端只拆段、逐段套这类：
+   每段独立成块 + 首行缩进 2em（中文段落习惯）+ 相邻段间距。
+   两端对齐 / 断词沿用 base.scss 的 `.justify-text`（页面两个类一起挂），
+   本处只补「段落」需要的两条，避免两页各写一份。 */
+.para-text {
+	display: block;
+	text-indent: 2em;
+}
+
+.para-text + .para-text {
+	margin-top: $sp-2;
+}
+
+/* ---------------- uview 弹层族根节点不参与增长（全项目一处兜住） ----------------
+   uview 的 `u-popup` 根节点自带 `flex: 1`（其 `$u-popup-flex`），而页壳是
+   **flex 列 + 滚动区 flex:1** —— 弹层一旦是它的直接子项，就会**与滚动区瓜分剩余高度**：
+   一个弹层吃掉半屏、三个弹层把内容区挤到只剩四分之一（真机踩过）。
+   uview 内部（遮罩 u-overlay / 内容 u-transition）都是 fixed / absolute 定位，
+   **不依赖根节点高度**，故让根节点干脆不参与增长即可。
+   ⚠️ 必须 `!important`：uview 的样式是 scoped 编译产物，优先级高于本全局规则。
+
+   ★ 2026-10-26 补 `.u-datetime-picker`：只写 `.u-popup` **不够** —— 日期选择器的根类
+   是另一枚自带 `flex: 1` 的节点（`.u-datetime-picker{flex:1}`，u-popup 埋在它里面，
+   本规则够不着）。列表页把 `<u-datetime-picker>` 直接放在页壳里，于是它与滚动区
+   **各分一半高度**：页面下半屏成了弹层的空盒子，列表被挤进上半屏（真机反馈
+   「下半部被遮住了」「切 tab 数据不切换」，2026-10-26）。
+   排查口诀：**页壳的直接子项里凡是 uview 组件，先查它根类有没有 `flex: 1`**。
+
+   ⚠️ 有意**不**收进来的：`.u-loadmore` / `.u-search` / `.u-input` / `.u-picker`。
+   前三个常作为**行向 flex 的子项**（搜索行、输入行）靠 `flex: 1` 占满整行，
+   全局改掉会让这些行塌掉；它们该由**使用它们的组件**自己收口
+   （已收：`components/app-list-state` 的 `.state__more`）。
+   `.u-picker` 是 u-datetime-picker 的内部子项，本规则已覆盖其外层，不必再动它。
+   ⚠️ MP 端本规则能否命中组件根节点**未在真机确证**（见 `memory/known_issues.md` K-08）
+   —— 页面侧按 K-08 的退路再补一道「传 class 进自己作用域」（例：
+   `pages/ledger/list.vue` 的 `.lgr__picker`），两道都留着。 */
+.u-popup,
+.u-datetime-picker {
+	flex: none !important;
+}

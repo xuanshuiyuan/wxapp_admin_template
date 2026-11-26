@@ -1,0 +1,113 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://example.com/schemas/api-response.json",
+	"title": "统一 API 响应体",
+	"description": "全栈统一响应格式。所有接口出口必须符合本 schema。前端消费方为 src/services/http/request.js。",
+	"type": "object",
+	"required": ["code"],
+	"properties": {
+		"code": {
+			"description": "业务码。0 = 成功。必须是数字（后端若返回字符串，前端用 Number() 归一后比较）。",
+			"type": ["number", "string"],
+			"examples": [0, 40005, 58001, 58003, 50008]
+		},
+		"msg": {
+			"description": "面向用户的提示，可直接展示。禁止包含堆栈 / SQL / 表名 / 文件路径等内部结构。",
+			"type": "string",
+			"examples": ["ok", "登录已失效，请重新进入", "请求失败"]
+		},
+		"data": {
+			"description": "业务数据。失败时可为 null；成功时结构由具体接口契约定义。",
+			"type": ["object", "array", "string", "number", "boolean", "null"]
+		}
+	},
+	"additionalProperties": true,
+
+	"definitions": {
+		"PagedData": {
+			"description": "统一分页结构。入参为 page / page_size（页码从 1 开始）。与 composables/useList 的 defaultPick 零配置吻合。",
+			"type": "object",
+			"required": ["list", "total"],
+			"properties": {
+				"list": {
+					"description": "当前页数据。★ 字段名必须是 list（useList 对 data/rows 有容错，但容错不是契约）。",
+					"type": "array",
+					"items": { "type": "object" }
+				},
+				"total": {
+					"description": "总条数。无 total 时 useList 靠「不足一页」判断到底。",
+					"type": "integer",
+					"minimum": 0
+				},
+				"page": {
+					"description": "当前页码（从 1 开始）。",
+					"type": "integer",
+					"minimum": 1
+				},
+				"page_size": {
+					"description": "每页条数。",
+					"type": "integer",
+					"minimum": 1
+				}
+			}
+		},
+
+		"SuccessResponse": {
+			"description": "成功响应。code 必须为 0（或等价的可归一为 0 的值）。",
+			"allOf": [{ "$ref": "#" }],
+			"properties": {
+				"code": { "const": 0 }
+			}
+		},
+
+		"ErrorResponse": {
+			"description": "失败响应。code 非 0，msg 必须可直接展示给用户。",
+			"allOf": [{ "$ref": "#" }],
+			"properties": {
+				"code": { "not": { "const": 0 } },
+				"msg": { "type": "string", "minLength": 1 }
+			}
+		},
+
+		"PagedSuccessResponse": {
+			"description": "分页成功响应。",
+			"allOf": [{ "$ref": "#/definitions/SuccessResponse" }],
+			"properties": {
+				"data": { "$ref": "#/definitions/PagedData" }
+			}
+		},
+
+		"KnownErrorCodes": {
+			"description": "本项目已定义的错误码（全部登记在 src/config/dict.js）。★ 契约错误码表不全，未列出的码以「后端实现 + 真机」为准，禁止臆造；也不许先塞占位码（C 端曾塞 40011/40012 两枚文档未定义的值，已删除）。",
+			"type": "integer",
+			"enum": [0, 40005, 40102, 50008, 58001, 58002, 58003, 58004, 58005, 58006, 60003],
+			"x-enum-descriptions": {
+				"0": "成功（CODE_SUCCESS）",
+				"40005": "登录失效（CODE_LOGIN_EXPIRED）—— http 层自动静默重登并重放一次",
+				"40102": "无权限操作（CODE_NO_PERMISSION）—— ★ 页面就地处置（提示 / 置灰 / 无权限空态，不自动重试）。刻意不进全局守卫：一个子模块无权不该弹阻断框",
+				"50008": "账号已被禁用（CODE_ACCOUNT_DISABLED）—— 全局守卫：弹框「联系管理员恢复」（登录与绑定接口都会回它）",
+				"58001": "该微信未绑管理员（CODE_ADMIN_NOT_BOUND）—— ★ **流程分支不是错误**：登录门据此清栈跳绑定页",
+				"58002": "账号或密码错误（CODE_BIND_CREDENTIAL_ERROR）—— 照后端 msg 提示（后端故意不区分是哪一项，防账号枚举）",
+				"58003": "绑定频控（CODE_BIND_RATE_LIMITED）—— 页面置灰 + 60s 倒计时（BIND_COOLDOWN_SECONDS），不自动重试、刻意不进全局守卫",
+				"58004": "未配置角色权限（CODE_ADMIN_NO_ROLE）—— 全局守卫：弹框「联系管理员分配」",
+				"58005": "该账号已绑其他微信（CODE_ACCOUNT_BOUND_OTHER_WX）—— 字段级结果，提示联系管理员解绑，不引导重试、不进守卫",
+				"58006": "该微信已绑其他管理员（CODE_WX_BOUND_OTHER_ACCOUNT）—— 同上",
+				"60003": "微信侧失败（CODE_WX_UNAVAILABLE，code 过期/已用过/网络）—— 换新 code 重试一次"
+			}
+		},
+
+		"ApiErrorTypes": {
+			"description": "前端 ApiError 的 type 枚举。定义见 src/services/http/error.js。",
+			"type": "string",
+			"enum": ["network", "http", "business", "auth", "guard", "unknown"],
+			"x-enum-descriptions": {
+				"network": "请求未发出 / 超时 / 断网 —— 提示重试",
+				"http": "HTTP 状态码非 2xx",
+				"business": "业务码非成功 —— 展示 msg",
+				"auth": "登录失效且静默重登未成功",
+				"guard": "命中全局业务码守卫（跳页/弹窗已由 guards 统一处理）—— 页面 catch 到可直接忽略",
+				"unknown": "其它异常（归一后的）"
+			}
+		}
+	}
+}

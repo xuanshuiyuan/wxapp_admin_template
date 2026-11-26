@@ -1,0 +1,218 @@
+# ---------------------------------------------------------------------------
+# release 工作流 —— 发布
+#
+# 与其他流程的关键差异：本流程会**执行构建**（唯一会跑命令的流程）。
+# 因此每一步执行前都必须获得用户确认，且顺序不可调换 ——
+# 尤其「最后一次命令必须是 build:*」这条，是本项目踩坑换来的口径。
+# ---------------------------------------------------------------------------
+
+version: 1
+name: release
+description: "发布链路：验证清单 → 安全扫描 → 构建产物校验 → 发布评审 → 手动上传 → 发布后验证"
+applies_to: ["uni-app", "vue3", "mp-weixin", "h5", "app"]
+last_updated: "2026-10-26"
+
+# ── 显式声明「本流程不涉及的环节」 ────────────────────────────────────────
+# CLAUDE.md §6.1-2 要求「不许跳过 service / test」。本流程是发布流程 ——
+# 此时业务代码已定稿并通过了 feature/bugfix 流程的 service 与 test 闸门，
+# 故本流程【不重复】service 层实现。此处显式声明，而非静默省略。
+not_applicable:
+  - step: service
+    reason: "发布流程不改业务逻辑；service 层已在 feature/bugfix 流程中定稿并通过 gate_service"
+  - step: ui
+    reason: "同上；界面已在 feature 流程中通过 gate_ui"
+
+trigger:
+  when:
+    - "要发版（微信小程序上传 / H5 部署 / App 打包）"
+    - "要产出交付包给测试或客户"
+  not_when:
+    - "仅本地开发调试（用 dev:mp-weixin）"
+    - "仅编译校验（用 verify:*，不走本流程）"
+
+preconditions:
+  - id: review_passed
+    check: "reviewer 是否已给出「无阻断项」结论"
+    required: true
+    on_missing: "★ 阻断发布，先走对应流程（feature / bugfix / refactor）拿到评审通过"
+  - id: changelog_ready
+    check: "真重要变更是否已在 commit message 记录（CHANGELOG 已冻结，见 CLAUDE.md §11.1）"
+    required: true
+    on_missing: "阻断发布，先补 commit message 记录"
+  - id: api_key_ready
+    check: ".env.production.local 的 VITE_API_KEY 是否就位（换机器/他人 clone 需另行向后端领取）"
+    required: true
+    on_missing: "阻断发布 —— 缺密钥的产物签不出合法请求"
+  - id: edition_registered
+    check: "若本次改动了 config/app.js 的 edition / source，后端是否已登记新值"
+    required: true
+    on_missing: "★ 阻断发布 —— 未登记的值会被后端 fail-closed（Im Invalid Request!），且是全局协商头"
+
+stages:
+  - id: 1_verify_plan
+    agent: test_agent
+    purpose: "出发布验证清单（本次变更需要验什么）"
+    inputs:
+      - "本次变更范围（git diff）"
+      - "memory/bug_history.md"
+      - "memory/known_issues.md（未确证项要进清单）"
+    outputs:
+      - "发布验证清单：功能项 / 环境项 / 端差异项 / 未确证项"
+      - "手工验证步骤（真机行为无法自动化）"
+    gate:
+      id: gate_verify_plan
+      criteria:
+        - "本次变更的每条改动都有对应验证项"
+        - "多端差异项已列（mp / h5）"
+        - "known_issues 的未确证项已进清单并标注「需真机验证」"
+      on_fail: "退回 test_agent"
+
+  - id: 2_security_scan
+    agent: security_agent
+    purpose: "发布前安全扫描（密钥 / 环境 / 产物 / 敏感信息）"
+    depends_on: [1_verify_plan]
+    inputs:
+      - "待发布代码"
+      - ".env.* 与 .gitignore"
+    outputs:
+      - "风险清单 + 结论（通过 / 阻断）"
+      - "已检查范围声明"
+    gate:
+      id: gate_security_scan
+      criteria:
+        - "无严重 / 高风险项"
+        - "VITE_API_KEY 未出现在 src/ 与待发布产物"
+        - ".env.*.local / dist/ / unpackage/ 未被误提交"
+        - "无明文 http:// 请求地址"
+      on_fail: "阻断发布，上报用户"
+    notes: "★ 只读扫描。执行扫描命令前说明要跑什么"
+
+  - id: 3_build
+    agent: deploy_agent
+    purpose: "按正确口径构建产物"
+    depends_on: [2_security_scan]
+    inputs:
+      - "目标端 + 目标环境"
+      - ".env.production（host）与 .env.production.local（密钥）"
+    outputs:
+      - "构建产物路径"
+      - "执行的命令序列"
+    gate:
+      id: gate_build
+      criteria:
+        - "★ 用户已确认（build 会实际执行命令）"
+        - "★ 命令序列的最后一条是 build:*（不是 verify:*）"
+        - "目标端正确（mp-weixin / h5）"
+      on_fail: "阻断，重新确认口径"
+    notes: |
+      ★ 本项目三条口径（C 端踩坑带来，违反任一条都可能把开发包发到生产）：
+        1. 目录由 dev:*/build:* 决定，环境由 --mode 决定，两轴正交。
+           verify:* 与 build:* 共用 dist/build/，后跑者覆盖前跑者。
+        2. 发布前必须最后跑一次 build:*。只跑过 verify:* 就上传，
+           会把 host 指向 localhost:15200 的开发包发到生产。
+        3. 真机测试包必须来自 npm run dev:mp-weixin 的 dist/dev/mp-weixin。
+
+  - id: 4_artifact_check
+    agent: deploy_agent
+    purpose: "产物校验（环境 / 密钥 / appid / 调试残留）"
+    depends_on: [3_build]
+    outputs:
+      - "校验结果表：检查项 / 命令 / 实际结果 / 结论"
+    gate:
+      id: gate_artifact_check
+      criteria:
+        - "grep localhost:15200 dist/build/<端>/ → 为空（★ 最关键的一条）"
+        - "产物中无 VITE_API_KEY 明文"
+        - "appid = 本项目自己的 appid（对比 manifest / project.config.json，且不是 REPLACE_WX_APPID）"
+        - "无遗留 console.log 调试残留（关键路径）"
+        - "host 指向本项目生产域名（且无 REPLACE_API_BASE_URL 残留）"
+      on_fail: "★ 阻断，转 debugger 查根因 —— 不许「先发了看看」"
+
+  - id: 5_release_review
+    agent: reviewer
+    purpose: "★ 最后一步：发布评审"
+    review_confirmation:
+      ask: "收尾时问用户一次：是否评审？要做请在本仓新开窗口（评审必须新开窗口；代码窗口不自评）"
+      on_decline: "跳过本阶段，记录「评审：跳过（用户确认）」"
+      rules: "project-dev 步骤 12.5；报告写 versions/vN/review*.md，结论回 versions/vN/CHANGELOG.md「评审」小节"
+    depends_on: [4_artifact_check]
+    inputs:
+      - "验证清单 + 安全扫描结论 + 产物校验结果"
+      - "本次全部变更"
+    outputs:
+      - "评审报告：结论 / 阻断项 / 建议项 / 已核对项 / 未审查范围"
+      - "回滚方案确认"
+    gate:
+      id: gate_release_review
+      criteria:
+        - "无阻断项"
+        - "前置条件全部满足（评审通过 / 重要变更已记录 / 密钥就位 / edition 已登记）"
+        - "产物校验全绿"
+        - "★ 回滚方案已给出且可执行"
+      on_fail: "打回对应阶段"
+
+  # ★ 流程铁律（CLAUDE.md §6.1-1）：评审若执行，reviewer 必须是最后一步；是否评审由用户收尾时决定。
+#   因此「上传」与「发布后验证」不作为 stages —— 它们在放行决策【之后】发生，
+#   属于人工执行的操作流程，定义在下方 post_release: 区块。
+#   这符合铁律的实质：agent 编排链的终局是 reviewer 的放行结论。
+
+quality_gates:
+  - "评审确认（review_confirmation）：收尾先问用户是否评审，用户说不做则记录跳过"
+  - "评审前置（preconditions）：★ 未评审通过不许发布"
+  - "安全扫描（gate_security_scan）：无严重/高风险"
+  - "构建口径（gate_build）：最后一条是 build:*，用户已确认"
+  - "产物校验（gate_artifact_check）：★ 无 localhost:15200"
+  - "发布评审（gate_release_review）：含可执行回滚方案"
+
+# ── 放行之后（人工执行，不由 agent 编排） ─────────────────────────────────
+# ⚠️ 本区块不是 stages 的一部分 —— reviewer 已给出放行结论后，由人执行。
+#    但它【必须】按顺序走完，且任一验证未过即触发回滚。
+post_release:
+  steps:
+    - id: upload
+      owner: "user (手动)"
+      action: "上传 / 部署 —— 使用 4_artifact_check 校验过的那份产物"
+      platforms: "微信开发者工具提交 / H5 部署 / App 打包（本系统不代传）"
+      precondition: "使用 4_artifact_check 校验过的产物；多端发布逐端独立出清单"
+      on_fail: "停止，重新回到 4_artifact_check"
+
+    - id: verify
+      owner: deploy_agent
+      action: "发布后验证"
+      checks:
+        - "冷启动静默登录成功"
+        - "真机下拉刷新正常"
+        - "关键页无白屏"
+        - "接口 host 指向生产（非 localhost）"
+        - "手机号脱敏展示正常"
+      on_fail: "★ 立即执行下方 rollback，并上报用户"
+
+    - id: register
+      owner: deploy_agent
+      action: "登记发布结果（产物路径 / 版本号 / 校验结果 / 验证结果）"
+
+  rollback_trigger: "verify 任一检查未通过，或线上出现与本次改动相关的故障"
+
+finalization:
+  - action: "在 commit message / 发布说明记录发布信息（CHANGELOG 已冻结，不新增）"
+    required: true
+    entry_fields: ["时间", "类型", "修改内容", "修改原因(why)", "影响范围", "涉及文件", "风险等级", "是否需要数据迁移"]
+  - action: "更新 .claude/context/current_sprint.md（记录已发布版本）"
+    required: true
+  - action: "若本次发布暴露新风险 → 更新 .claude/memory/known_issues.md"
+    required: false
+
+# ── 回滚方案模板 ──────────────────────────────────────────────────────────
+rollback:
+  mp_weixin: "在微信公众平台将线上版本回退到上一个已发布版本（体验版/正式版各自回退）"
+  h5: "重新部署上一个可用产物；若无留存产物，从上一个可用 tag 重新 build:h5"
+  app: "下架当前包 / 提交上一个可用版本"
+  verify_after_rollback:
+    - "冷启动静默登录成功"
+    - "关键页可打开"
+  note: "★ 回滚方案必须在发布前准备好，不能事后补"
+
+# ── 多端发布 ──────────────────────────────────────────────────────────────
+multi_platform_policy: "逐端独立出清单、独立校验、独立评审；不许合并成一条命令一次发完"
+
+parallel: []   # 发布必须串行 —— 顺序本身是安全措施

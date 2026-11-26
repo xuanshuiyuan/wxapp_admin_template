@@ -1,0 +1,82 @@
+{
+	"name": "wxapp_admin_template",
+	// ⚠️ 微信小程序 appid 必须替换（init.sh 会提示填；也可手工改这里）
+	"appid": "",
+	"description": "B 端管理小程序通用模板（uni-app + Vue 3）",
+	"versionName": "1.0.0",
+	"versionCode": "100",
+	"quickapp": {},
+	"mp-weixin": {
+		"appid": "REPLACE_WX_APPID",
+		"setting": {
+			"urlCheck": false,
+			"minified": true,
+			"postcss": true
+		},
+		"usingComponents": true,
+		// 按需注入（官方性能项）：只注入页面 json 里 usingComponents 实际声明的组件代码。
+		// 前提：全项目无 <component :is> 动态组件。
+		"lazyCodeLoading": "requiredComponents",
+		// 隐私保护指引：chooseImage 等隐私接口需要先通过 wx.requirePrivacyAuthorize；
+		// 公众平台后台必须已配置《用户隐私保护指引》并声明「相册 / 摄像头」用途（外部前提）。
+		"__usePrivacyCheck__": true
+		// ⚠️ 未声明 permission / requiredPrivateInfos（无定位类业务功能）。
+		//    将来用到 uni.getLocation 时必须同步补：
+		//      "permission": { "scope.userLocation": { "desc": "…用途说明…" } }
+		//      "requiredPrivateInfos": ["getLocation"]
+		// ⚠️ 未声明 navigateToMiniProgramAppIdList（当前无跳其他小程序的需求）。
+	},
+	"mp-alipay": {
+		"usingComponents": true
+	},
+	"mp-baidu": {
+		"usingComponents": true
+	},
+	"mp-toutiao": {
+		"usingComponents": true
+	},
+	"uniStatistics": {
+		"enable": false
+	},
+	"vueVersion": "3",
+	"app": {
+		"distribute": {
+			"icons": {
+				"android": {
+					"hdpi": "",
+					"xhdpi": "",
+					"xxhdpi": "",
+					"xxxhdpi": ""
+				}
+			}
+		}
+	},
+	"app-android": {
+		"distribute": {
+			"modules": {},
+			"icons": {
+				"hdpi": "",
+				"xhdpi": "",
+				"xxhdpi": "",
+				"xxxhdpi": ""
+			},
+			"splashScreens": {
+				"default": {}
+			}
+		}
+	},
+	"app-ios": {
+		"distribute": {
+			"modules": {},
+			"icons": {},
+			"splashScreens": {}
+		}
+	},
+	"web": {
+		"router": {
+			"mode": ""
+		}
+	}
+	// ⚠️ 未配 h5.devServer.proxy：H5 联调走 .env 的 VITE_HOST_H5 直连 + 后端 CORS。
+	//    需要跨域联调时另定 CORS 方案，不要照抄一段没验证过的 proxy。
+}

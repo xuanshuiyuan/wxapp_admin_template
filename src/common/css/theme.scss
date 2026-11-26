@@ -1,0 +1,247 @@
+// ===========================================================================
+// 项目设计 token —— 「流光玻璃」Aurora Glass 体系（管理端）
+//
+// ★ 来源：docs/design/c-aurora-glass/ 的两张设计稿（390×844 定稿），逐值照抄。
+//   稿内 1px = 1pt；★ 换算：rpx = pt × (750 ÷ 390) ≈ pt × 1.923。
+// ★ 栅格基数：4pt → 8rpx（所有间距/尺寸都是 8rpx 的倍数，除发丝线与字号）
+// ★ 换新项目：只改这一个文件（+ 同步 config/theme.js 的 JS 镜像），下层自动跟随
+// ★ 只允许写 SCSS 变量，禁止写任何 CSS 规则！
+//
+// ⚠️ 本文件是管理端模板的**唯一值源**：换品牌色 / 字号 / 间距只改这里
+//    （+ 同步 config/theme.js 的 JS 镜像），下层全部是 token 引用，禁止硬编码色值。
+// ===========================================================================
+
+// ============================
+// 品牌色
+// ============================
+$color-primary: #6D5BFF;             // 主色（紫）：CTA / 链接 / 选中 / 线性图标
+$color-primary-dark: #5A48E8;        // 主色按下态
+$color-primary-light: #EFEDFF;       // 主色浅底（= rgba($color-primary,.12) 落在白底上的等效实色）
+// 主色透明度档：图标底盘 / 选中底 / 聚焦光圈三处都用它 —— 定义成 rgba 而不是实色，
+// 因为设计稿里这些底盘是**叠在卡片上**的，用实色会在不同底色上出现色差
+$color-primary-soft: rgba(109, 91, 255, 0.12);
+$color-primary-ring: rgba(109, 91, 255, 0.16);   // 输入框聚焦光圈（桌面端 3px）
+
+// 数据强调色：设计稿里前两张指标数字 / 迷你折线用它。
+// 语义与主色独立 —— 主色讲「可点的」，它讲「数字」。日后调其一不该牵动另一个。
+$color-data: #22C3E6;
+
+// 状态色
+$color-success: #12B76A;
+$color-warning: #F79009;
+$color-danger: #F04438;
+$color-info: #8B86A8;                // 中性信息 = 弱文字色（设计稿没有第 4 个状态色，借弱墨）
+
+// 状态色的浅底（chip / 标签底）：一律从状态色推导，换色不用回来改硬编码
+$color-success-light: rgba(18, 183, 106, 0.12);
+$color-warning-light: rgba(247, 144, 9, 0.14);
+$color-danger-light: rgba(240, 68, 56, 0.12);
+
+// ============================
+// 文字
+// ============================
+// 设计稿只有三档墨（ink / ink-2 / ink-3）。项目 token 有五个名字，故：
+// $text-title 与 $text-main **同值** —— 稿里正文与标题就是同一个墨色，靠字重与字号分层，
+// 不是漏了区分（别为了「看起来更细」给 main 硬调一档，那会偏离定稿）。
+$text-title: #1A1730;                // ink-1：标题 / 正文 / 数字
+$text-main: #1A1730;                 // ink-1（同值，见上）
+$text-sub: #5A5578;                  // ink-2：字段标签 / 卡头次要 / 身份行
+$text-muted: #8B86A8;                // ink-3：副行 / 占位符 / 时间 / 页脚
+// 禁用档设计稿未出现（无禁用态画面）。由 ink-3 向白提亮一档而来，属**推导值**非稿内值；
+// 日后有真禁用态设计稿时以稿为准
+$text-disabled: #C6C2D6;
+$text-inverse: #FFFFFF;
+$text-on-primary: #FFFFFF;           // 主色底上的字（CTA / 主色 chip）
+$text-on-aurora: #FFFFFF;            // 极光渐变上的主字
+$text-on-aurora-2: rgba(255, 255, 255, 0.78);  // 极光渐变上的次要字（日期 / 副标）
+
+// ============================
+// 背景与填充
+// ============================
+$bg-page: #FAFAFE;                   // 页面底：极光下方的内容区底色
+$bg-card: #FFFFFF;                   // 卡片
+// 填充档（输入框常态 / 次级块）：稿里浅底档是 #F1F0F7（卡内线）与 #FAFAFE（内容区），
+// 输入框这种「块状浅底」稿内没有 —— 取 ink-1 的 4% 推导，与 $bg-hover 同族
+$bg-fill: #F4F3FA;
+$bg-hover: #F6F5FC;                  // 按下 / hover
+$bg-mask: rgba(26, 23, 48, 0.45);    // 遮罩（用墨色而非纯黑，与冷紫页面底同族）
+// 角标档：压在缩略图 / 图片上的小控件底（如上传列表的删除按钮）。
+// 比 $bg-mask 深一档 —— 缩略图本身明暗不定，遮罩档压不住浅色图片上的白色图标
+$bg-badge: rgba(26, 23, 48, 0.55);
+
+// ★ 极光渐变（品牌底 / 头部唯一配方）—— 设计稿的核心识别物，三处（绑定页整屏、
+// 首页头部、CTA）同源。两枚光斑的坐标是相对 390×844 盒子算的，**不要改尺寸锁法**：
+// 小程序端用 background-size 固定盒高，否则内容变长光斑会各自漂走
+$bg-aurora:
+	radial-gradient(circle at 88% 6%, rgba(34, 195, 230, 0.45), transparent 46%),
+	radial-gradient(circle at 8% 94%, rgba(255, 110, 199, 0.35), transparent 50%),
+	linear-gradient(160deg, #6D5BFF 0%, #8B5CF6 38%, #C86DD7 68%, #6D5BFF 100%);
+// 极光渐变 CTA：比页面底更亮的一档紫，做出「按钮浮在品牌底上」的层次
+$bg-aurora-cta: linear-gradient(135deg, #7C5CFF 0%, #B45CFF 100%);
+
+// ★ 玻璃拟态（设计稿的另一核心识别物，用于骑缝主卡）
+// ⚠️ 必须**两行都写**且顺序不能反：不透明档在前、玻璃档在后。
+//    微信小程序端不支持 backdrop-filter，会退化成第一行的近实心白 —— 真机观感比稿子更「实」，
+//    这是预期降级（与 theme.scss 里 safe-area 回退是同一套写法思路）。
+$glass-bg-fallback: rgba(255, 255, 255, 0.92);
+$glass-bg: rgba(255, 255, 255, 0.72);
+$glass-line: rgba(255, 255, 255, 0.55);          // 玻璃卡描边（亮边，不是深边）
+$glass-blur: blur(20px) saturate(1.4);
+
+// ============================
+// 描边
+// ============================
+$border-color: #EFEDF7;              // 卡片描边（稿内卡内线 #F1F0F7 的同族）
+$divider-color: #F1F0F7;             // 行内发丝线（稿内 1px 竖/横线就是这个值）
+
+// ============================
+// 字号（rpx，390pt × 1.923）
+// ============================
+// 设计稿共 9 档（11/12/13/14/15/17/18/20/24px），换算后取整到 1rpx
+$fs-micro: 21rpx;    // 11px → 微：环比 / 标签 / 时间 / 页脚
+$fs-caption: 23rpx;  // 12px → 辅助：字段标签 / 副行 / 副标
+$fs-body: 25rpx;     // 13px → 正文：列表行 / 动态内容
+$fs-lead: 27rpx;     // 14px → 列表主文（待办主文 / 入口名）
+$fs-label: 29rpx;    // 15px → 区块标题（卡头）
+$fs-cta: 33rpx;      // 17px → 顶栏标题 / CTA 文案
+$fs-price: 35rpx;    // 18px → 窄栏指标数字（1/4 栏里的 ¥86,400 用这档）
+$fs-display: 38rpx;  // 20px → 页面主标题 / 指标数字 / 问候语
+$fs-hero: 46rpx;     // 24px → 大数字（预留：详情页总额一类）
+
+// 旧名兼容映射（C 端遗留名，新代码请用上面的规范名）
+$fs-xs: $fs-micro;
+$fs-sm: $fs-caption;
+$fs-base: $fs-body;
+$fs-md: $fs-body;
+$fs-lg: $fs-label;
+$fs-xl: $fs-cta;
+$fs-2xl: $fs-display;
+$fs-3xl: $fs-hero;
+
+// ============================
+// 字体族（只有「倒计时」这类数字专用场景才单列）
+// ============================
+// 秒级倒计时专用：iOS 的系统 DIN（仪表盘式的窄高数字，跳秒时视觉最稳），
+// 其它端（微信 Android / H5）没有 DIN，回落等宽字体 —— 仍能保证数字等宽不抖。
+// ⚠️ 不要给正文/标题套这个：DIN 的中文回落不统一，正文会「中英两套字形」。
+$font-timer: "DIN Alternate", "DIN Condensed", "SF Mono", "Menlo", "Consolas", monospace;
+
+// ============================
+// 字重
+// ============================
+$fw-bold: 700;
+$fw-semibold: 600;
+$fw-medium: 500;
+$fw-regular: 400;
+
+// ============================
+// 行高
+// ============================
+// 与字号一一对位（同值保基线）：数字与标题用紧行高，正文用 1.6
+$lh-hero: 60rpx;
+$lh-display: 52rpx;
+$lh-price: 48rpx;
+$lh-cta: 46rpx;
+$lh-label: 40rpx;
+$lh-lead: 38rpx;
+$lh-body: 35rpx;
+$lh-caption: 31rpx;
+$lh-micro: 27rpx;
+
+$lh-tight: 1.25;
+$lh-base: 1.6;
+$lh-loose: 1.8;
+
+// ============================
+// 间距（rpx，基数 4pt × 1.923 → 8rpx）
+// ============================
+// ★ 与设计稿的 4px 栅格完全同源（稿内 16px 页边距 = 32rpx，12px 卡间距 = 24rpx），
+//   故这一节与 C 端旧值一致，未做改动
+$sp-0-5: 4rpx;
+$sp-1: 8rpx;
+$sp-1-5: 12rpx;
+$sp-2: 16rpx;
+$sp-3: 24rpx;
+$sp-4: 32rpx;
+$sp-5: 40rpx;
+$sp-6: 48rpx;
+$sp-7: 56rpx;
+$sp-8: 64rpx;
+$sp-10: 80rpx;
+
+// 语义间距
+$page-padding: $sp-4;         // 32rpx（16px 页面左右边距）
+$card-padding: $sp-4;         // 32rpx（卡片内边距）
+$card-gap: $sp-3;             // 24rpx（12px 卡片间距）
+$section-gap: $sp-3;          // 24rpx（区块之间）
+$chip-gap: $sp-2;             // 16rpx
+// ⚠️ 上面这些是「间距取值」，**不是** CSS `gap` 属性的许可：
+//   iOS 微信 WKWebView（系统 < 14.5）不支持 flex 的 gap —— 写了 gap 在开发者工具 / H5 看着有缝，
+//   真机上元素会贴死（2026-11-10 用户两次反馈「两个按钮挨太近」）。
+//   flex 容器里的间距一律用子项 margin 实现（换行行给每个子项右侧 + 底部 margin，容器补负边距抵消末列/末行）。
+$nav-height: 84rpx;           // 44pt（顶栏行高）
+// ★ 固定底栏下边距：全项目唯一定义处，一律写成两行（纯 rpx 回退 + 叠安全区）
+$bottom-bar-gap: $sp-2;
+
+// ============================
+// 安全区
+// ============================
+// ★ 唯一定义处：要留安全距离的地方一律把这两个常量算进 calc，禁止页面手写 env()
+//   用法：padding-bottom: calc(#{$bottom-bar-gap} + #{$safe-bottom});
+// ⚠️ calc() 里混 rpx 与 env() 在小程序端兼容性不可靠 → **必先写一行不含 env 的回退**
+$safe-bottom: env(safe-area-inset-bottom);
+$safe-top: env(safe-area-inset-top);
+
+// ============================
+// 圆角（pt × 1.923）
+// ============================
+$rd-panel: 48rpx;     // 24px → 登录玻璃卡 / 内容区顶圆角（最大档）
+$rd-card: 40rpx;      // 20px → 卡片
+$rd-control: 28rpx;   // 14px → 输入框 / 按钮
+$rd-chip: 12rpx;      // 6px → 标签
+$rd-pill: 999rpx;     // 胶囊（CTA / 头像 / 圆形底盘）
+
+// 旧名兼容
+$rd-sm: $rd-chip;
+$rd-md: $rd-card;
+$rd-lg: $rd-panel;
+$rd-full: $rd-pill;
+
+// ============================
+// 阴影
+// ============================
+// 本体系的层次**主要靠色块与留白**，阴影极克制：卡影很浅，只有玻璃卡才有明显彩影
+$shadow-card: 0 4rpx 18rpx rgba(26, 23, 48, 0.06);         // 常规白卡
+$shadow-entry: 0 6rpx 18rpx rgba(76, 54, 160, 0.10);       // 宫格入口卡（小卡密排，比卡影略彩）
+$shadow-glass: 0 16rpx 40rpx rgba(76, 54, 160, 0.20);      // 玻璃卡（骑缝主卡）
+$shadow-float: 0 16rpx 40rpx rgba(26, 23, 48, 0.18);       // 弹层 / 浮层
+$shadow-bottom-bar: 0 -4rpx 16rpx rgba(26, 23, 48, 0.06);
+$shadow-cta: 0 10rpx 24rpx rgba(124, 92, 255, 0.35);       // 极光 CTA 的彩色柔影
+
+// ============================
+// 组件尺寸
+// ============================
+$size-cta-h: 92rpx;           // 48px → 主 CTA 高
+$size-control-h: 88rpx;       // 46px → 输入框高
+$size-chip-h: 36rpx;          // 18px → 标签高
+$size-icon-disc: 80rpx;       // 40px → 入口图标圆底盘
+$size-icon-button: 84rpx;     // 44px → 顶栏图标热区
+$size-avatar: 68rpx;          // 34px → 头像
+$size-tabbar-h: 92rpx;        // 46px → 二级页的**固定 tab 条**高（钉在滚动区之上）。
+                              //   ⚠️ 它是**跨层常量**：页面算术要用它（app-refresher 的 :top 必须
+                              //   整块下移一个 tab 条高，否则指示器与 tab 条叠在一起）——
+                              //   JS 侧镜像见 config/theme.js 的 sizeTabbarH，两处同源
+
+// ============================
+// z-index
+// ============================
+$z-nav: 100;
+$z-bottom-bar: 200;
+$z-popover: 500;
+
+// ============================
+// 动效
+// ============================
+$ease-standard: cubic-bezier(.4, 0, .2, 1);
+$duration-fast: .15s;
+$duration-base: .25s;

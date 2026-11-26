@@ -1,0 +1,31 @@
+# 依赖（HBuilderX/CLI 安装后产生，当前不存在，规则为未来兜底）
+node_modules/
+
+# 构建产物
+unpackage/
+dist/
+.hbuilderx/
+
+# 本地环境与密钥
+.env.local
+.env.*.local
+
+# 日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 编辑器 / 操作系统
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# 本机设计稿 / PRD（按需自建，不进仓库）
+# ⚠️ 前导斜杠必须有：裸写 `docs/` 会匹配【任意层级】的 docs 目录，
+#    连带把 .claude/docs/（AI 系统文档，要进仓库）一起忽略掉。
+/docs/
+
+# CodeGraph 本机索引（可选工具）
+.codegraph/

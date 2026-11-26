@@ -1,0 +1,226 @@
+# ---------------------------------------------------------------------------
+# feature 工作流 —— 新功能 / 新页面 / 新接口
+#
+# 本文件只定义「顺序 · 角色 · 闸门 · 产物」，不写任何业务实现与命令参数。
+# 铁律（全局，见 .claude/CLAUDE.md §6.1）：
+#   1. 评审若执行，reviewer 必须是最后一步；是否评审由用户收尾时决定
+#   2. 不许跳过 service 层与 test 步骤（是否「执行」测试由用户决定）
+#   3. 任一步出 blocker → 退回上一步，不许带病前进
+#   4. 流程结束按 CLAUDE.md §11.1：只记真重要变更（commit message 一行）；CHANGELOG 已冻结
+# ---------------------------------------------------------------------------
+
+version: 1
+name: feature
+description: "新功能 / 新页面 / 新接口的完整链路：架构 → 契约 → 业务 → 数据 → 界面 → 测试 → 安全 → 评审"
+applies_to: ["uni-app", "vue3", "go", "java", "python", "php", "node"]
+last_updated: "2026-10-26"
+
+# ── 触发条件 ──────────────────────────────────────────────────────────────
+trigger:
+  when:
+    - "新增业务模块 / 新页面 / 新接口"
+    - "新增跨层能力（需同时动 services 与 pages）"
+    - "需求需要澄清业务规则"
+  not_when:
+    - "单文件小改动（改字段 / 修明确 bug / 样式文案）→ 直接实现，不走本流程"
+    - "照抄既有模式的复制扩展 → 直接实现"
+
+# ── 前置条件 ──────────────────────────────────────────────────────────────
+preconditions:
+  - id: contract_ready
+    check: "后端接口契约是否到位（路径 / 入参 / 响应 / 错误码）"
+    required: true
+    on_missing: "停在第 1 步之前，向用户索取契约；api_designer 可产出「待确认清单」但不得臆造字段"
+
+# ── 执行阶段 ──────────────────────────────────────────────────────────────
+stages:
+  - id: 1_design
+    agent: architect
+    purpose: "定分层落点、依赖方向、模块边界、状态与数据流转"
+    inputs:
+      - "需求描述 + 验收标准"
+      - ".claude/CLAUDE.md §3 架构"
+      - "相关现有源码（必须实读）"
+    outputs:
+      - "ADR：决策 / 现状 / 方案 / 备选 / 影响面 / 风险 / 待确认"
+      - "依赖方向图（ASCII）"
+    gate:
+      id: gate_design
+      criteria:
+        - "业务规则明确落在 services/ 或 api/，不在 pages/ 或 components/"
+        - "无反向依赖、无同级循环（若成环，方案必须是注册模式）"
+        - "已标注是否命中 C 端共用文件（services/ composables/ utils/ components/app-* common/css/ styles/）"
+      on_fail: "退回 architect 重出 ADR"
+
+  - id: 2_contract
+    agent: api_designer
+    purpose: "定接口契约、登记 endpoints.js、定义 api/<域>.js 方法签名"
+    depends_on: [1_design]
+    inputs:
+      - "后端接口文档（唯一可信来源）"
+      - "src/config/endpoints.js 现状"
+      - "src/config/dict.js 现有错误码"
+    outputs:
+      - "契约表（路径 / 方法 / 入参 / 响应 / 错误码 / 鉴权闸口 / options 默认值）"
+      - "endpoints.js 增量"
+      - "api/<域>.js 签名骨架"
+    gate:
+      id: gate_contract
+      criteria:
+        - "路径不带 /v2 前缀与前导斜杠"
+        - "每个 options 取值都写明 why"
+        - "登录/绑定接口标了 authRetry:false；装饰位模块标了 guard:false"
+        - "无臆造字段：不确定项进「待确认」，不许编"
+      on_fail: "退回 api_designer；契约冲突时上报用户裁决"
+
+  - id: 3_service
+    agent: backend_service
+    purpose: "实现业务规则与服务编排（api 层方法体 + services 层逻辑）"
+    depends_on: [2_contract]
+    inputs:
+      - "契约表 + 签名骨架"
+      - "现有同类实现（照抄形态与注释风格）"
+    outputs:
+      - "业务实现代码（完整文件）"
+      - "业务规则清单（规则 / 边界 / 异常路径）"
+    gate:
+      id: gate_service
+      criteria:
+        - "业务逻辑未下沉到 pages/ 或 components/"
+        - "失败统一抛 ApiError，无静默吞异常"
+        - "未重复造已有能力（useList / useModal / platform / storage / toast）"
+      on_fail: "退回 backend_service"
+
+  - id: 4_data
+    agent: repository_agent
+    purpose: "封装数据访问、对齐分页契约、定义缓存策略"
+    depends_on: [3_service]
+    inputs:
+      - "契约表（分页字段）"
+      - "src/composables/useList.js（消费方契约）"
+      - "src/services/storage.js（本地存储唯一入口）"
+    outputs:
+      - "数据访问代码"
+      - "数据形态表 + 缓存策略表（含失效条件）"
+      - "与 useList 的契约对齐结论"
+    gate:
+      id: gate_data
+      criteria:
+        - "未绕过 curl 直调 uni.request"
+        - "未绕过 services/storage.js 直读写本地存储"
+        - "未缓存「用户状态类」数据（以服务端真值为准）"
+      on_fail: "退回 repository_agent"
+
+  - id: 5_ui
+    agent: frontend_engineer
+    purpose: "实现页面 / 组件 / composable 与样式接线"
+    depends_on: [3_service, 4_data]
+    inputs:
+      - "src/pages/admin-home/index.vue（B 档页壳活样板）"
+      - "common/css/theme.scss（token）+ styles/scaffold.scss（版式块）"
+      - "api 方法签名（页面只调，不实现）"
+    outputs:
+      - ".vue / .js 完整文件"
+      - "接线清单（全局件 / composable / api）"
+      - "pages.json 登记项"
+    gate:
+      id: gate_ui
+      criteria:
+        - "页面无业务逻辑（只有：调 api · 渲染 · 事件响应）"
+        - "页面无 #ifdef（端差异收在 services/platform.js）"
+        - "每页已挂不带 show 的 <app-loading> 与一个 <app-modal>"
+        - "类名未撞 ColorUI（≥3 字母 + 语义前缀）；页面私有类名带页面前缀"
+        - "未硬编码色值/字号/间距；未手写 env(safe-area-inset-*)"
+        - "pages.json 已登记；若加 tabBar 已同步 services/route.js 的 TAB_PAGES"
+      on_fail: "退回 frontend_engineer"
+
+  - id: 6_test
+    agent: test_agent
+    purpose: "生成测试与用例清单（★ 默认只生成不执行）"
+    depends_on: [5_ui]
+    inputs:
+      - "本次全部改动"
+      - "`.claude/skills/rule-testing/`"
+      - "memory/bug_history.md（回归用例来源）"
+    outputs:
+      - "测试文件 + 用例清单表"
+      - "手工验证步骤（真机/多端/签名等不可自动化项）"
+      - "未覆盖清单 + 原因"
+    gate:
+      id: gate_test
+      criteria:
+        - "关键失败路径有用例（ApiError 各 type 分支）"
+        - "边界有用例（空值 / 0 / 超长 / 非法类型）"
+        - "未覆盖项已如实列出，未伪造覆盖率"
+    on_fail: "退回 test_agent"
+    notes: "★ 本阶段只生成。执行测试需用户在本轮明确要求（.claude/CLAUDE.md §9.3）"
+
+  - id: 7_security
+    agent: security_agent
+    purpose: "安全审查（密钥 / 鉴权 / 敏感信息 / 会话 / 注入 / 依赖 / 产物）"
+    depends_on: [6_test]
+    inputs:
+      - "本次全部改动"
+      - "`.claude/skills/rule-security/`"
+      - "memory/known_issues.md"
+    outputs:
+      - "风险清单（等级 / 位置 / 证据 / 影响 / 修复建议 / 是否阻断）"
+      - "已检查范围声明"
+    gate:
+      id: gate_security
+      criteria:
+        - "无严重 / 高风险项"
+        - "无密钥泄漏（VITE_API_KEY / token / 完整手机号）"
+        - "authRetry:false 与 guard:false 的使用点均经评估，未绕过安全动作"
+      on_fail: "阻断流程，上报用户；严重级不走自动化"
+
+  - id: 8_review
+    agent: reviewer
+    purpose: "★ 最后一步：代码评审，唯一可否决角色"
+    review_confirmation:
+      ask: "收尾时问用户一次：是否评审？要做请在本仓新开窗口（评审必须新开窗口；代码窗口不自评）"
+      on_decline: "跳过本阶段，记录「评审：跳过（用户确认）」"
+      rules: "project-dev 步骤 12.5；报告写 versions/vN/review*.md，结论回 versions/vN/CHANGELOG.md「评审」小节"
+    depends_on: [7_security]
+    inputs:
+      - "git diff（全部改动）"
+      - ".claude/CLAUDE.md §9 红线 18 条"
+      - ".claude/rules/*"
+    outputs:
+      - "评审报告：结论 / 阻断项 / 建议项 / 已核对通过项 / 未审查范围"
+    gate:
+      id: gate_review
+      criteria:
+        - "无阻断项"
+        - "结构变更已同步 .claude/CLAUDE.md"
+        - "真重要变更（新表/新接口/状态机/权限/口径/数据迁移）已在 commit message 写一行"
+        - "业务规则变化已同步 project-meta/modules/<m>/business-logic.md"
+        - "无编造的字段名 / 错误码 / 接口路径"
+      on_fail: "打回对应阶段（按阻断项归属），不许带病合入"
+
+# ── 质量控制节点汇总 ──────────────────────────────────────────────────────
+quality_gates:
+  - "评审确认（review_confirmation）：收尾先问用户是否评审，用户说不做则记录跳过"
+  - "契约确认（gate_contract）：无契约不动手"
+  - "分层达标（gate_service + gate_ui）：业务逻辑不在页面"
+  - "测试覆盖（gate_test）：失败路径与边界有用例，盲区已声明"
+  - "安全通过（gate_security）：无严重/高风险"
+  - "评审通过（gate_review）：无阻断项 + 变更已登记"
+
+# ── 流程收尾（强制） ──────────────────────────────────────────────────────
+finalization:
+  - action: "按 CLAUDE.md §11.1：真重要变更在 commit message 写一行；普通改动不记；CHANGELOG 不新增"
+    required: true
+  - action: "若属结构变更 → 同步 .claude/CLAUDE.md 对应章节"
+    required: true
+  - action: "若产生新知识 / 新坑 → 更新 .claude/memory/"
+    required: false
+  - action: "更新 .claude/context/current_sprint.md"
+    required: false
+
+# ── 并行机会 ──────────────────────────────────────────────────────────────
+parallel:
+  - stages: [4_data, 5_ui]
+    note: "契约确认后，数据层与界面层可并行（均只依赖 3_service 的产物）"
+  - stages: [7_security]
+    note: "安全审查可与 6_test 并行（独立视角，互不依赖）"

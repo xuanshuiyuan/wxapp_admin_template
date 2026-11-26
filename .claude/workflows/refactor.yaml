@@ -1,0 +1,183 @@
+# ---------------------------------------------------------------------------
+# refactor 工作流 —— 重构（行为不变）
+#
+# 核心验收标准不是「代码更漂亮」，而是「行为等价」。
+# 任何无法证明行为等价的改动，都要降级成 feature 流程重新评估。
+# ---------------------------------------------------------------------------
+
+version: 1
+name: refactor
+description: "重构链路：架构评估 → 行为基线 → 分步实施 → 等价性证明 → 回归 → 评审"
+applies_to: ["uni-app", "vue3", "go", "java", "python", "php", "node"]
+last_updated: "2026-10-26"
+
+trigger:
+  when:
+    - "消除重复逻辑（同一能力出现 ≥3 次）"
+    - "调整分层落点（如把页面里的取数逻辑移入 composable）"
+    - "拆分过大的模块 / 合并过碎的模块"
+    - "替换已被废弃的内部写法（对外行为不变）"
+  not_when:
+    - "行为要变（那是 feature 或 bugfix）"
+    - "仅改风格/注释（直接改，不走流程）"
+
+preconditions:
+  - id: behavior_baseline
+    check: "能否列出改动前的「可观察行为」清单（对使用者/调用方可见的一切）"
+    required: true
+    on_missing: "先建立基线；没有基线的重构无法验收"
+  - id: no_contract_change
+    check: "是否触及对外契约（接口路径 / 字段名 / 错误码 / 导出签名）"
+    required: true
+    on_violation: "触及契约 = 不是重构，退回 feature 流程"
+
+stages:
+  - id: 1_assess
+    agent: architect
+    purpose: "评估重构的必要性、边界与风险，建立行为基线"
+    inputs:
+      - "重构目标与动机"
+      - "相关源码（实读）"
+      - ".claude/memory/architecture.md"
+    outputs:
+      - "ADR：为什么重构（必须有当下需求支撑）/ 边界 / 备选方案"
+      - "★ 行为基线清单：改动前所有可观察行为（含错误路径、边界、时序）"
+      - "影响面：文件清单 + 受影响端 + 是否命中 C 端共用文件"
+    gate:
+      id: gate_assess
+      criteria:
+        - "重构动机有当下需求支撑（不为「架构好看」而重构）"
+        - "行为基线已列出，含错误路径与边界（不只是 happy path）"
+        - "明确未触及对外契约"
+        - "已标注 C 端共用文件（改动需双向下发）"
+      on_fail: "退回 architect；若触及契约 → 改走 feature 流程"
+
+  - id: 2_plan
+    agent: architect
+    purpose: "拆成可独立验证的小步（每步都可单独回滚）"
+    depends_on: [1_assess]
+    outputs:
+      - "分步计划：每步的目标 / 涉及文件 / 该步结束时应保持的行为"
+      - "每步的回滚方式"
+    gate:
+      id: gate_plan
+      criteria:
+        - "每步足够小，可单独验证与回滚"
+        - "每步都不改变对外行为"
+        - "无「一步到位」的大爆改"
+      on_fail: "退回 architect 继续拆分"
+
+  - id: 3_implement
+    agent: "backend_service | frontend_engineer | repository_agent"
+    purpose: "按分步计划实施（每步独立可验证）"
+    depends_on: [2_plan]
+    inputs:
+      - "分步计划"
+      - "行为基线清单"
+    outputs:
+      - "每步的改动代码（精确 diff）"
+      - "每步的行为对照说明（改前 → 改后，逐条对齐基线）"
+    gate:
+      id: gate_implement
+      criteria:
+        - "每步改动与计划一致，未顺手扩大范围"
+        - "业务逻辑未下沉到 pages/ 或 components/"
+        - "未引入重复逻辑；未重造已有能力"
+        - "未改任何对外契约（导出签名 / 接口路径 / 字段名 / 错误码）"
+        - "每步都已对照行为基线逐条确认未变"
+      on_fail: "回退该步，重新实施"
+
+  - id: 4_equivalence
+    agent: test_agent
+    purpose: "★ 行为等价性证明：为基线清单逐条建立验证（默认只生成不执行）"
+    depends_on: [3_implement]
+    inputs:
+      - "行为基线清单"
+      - "每步的行为对照说明"
+    outputs:
+      - "等价性对照表：基线条目 · 改前行为 · 改后行为 · 验证方式 · 结论"
+      - "验证用例（覆盖错误路径与边界）"
+      - "未能验证的条目 + 原因（诚实声明）"
+    gate:
+      id: gate_equivalence
+      criteria:
+        - "基线清单**逐条**都有结论（无遗漏项）"
+        - "错误路径与边界也在对照表内，不只 happy path"
+        - "无法验证的条目已标注「未确证」，未假装通过"
+      on_fail: "退回 test_agent 补齐对照"
+    notes: "★ 只生成。执行需用户明确要求"
+
+  - id: 5_regression
+    agent: test_agent
+    purpose: "回归验证（确认未破坏既有功能）"
+    depends_on: [4_equivalence]
+    inputs:
+      - "memory/bug_history.md（历史 bug 的回归用例）"
+      - "本次改动范围"
+    outputs:
+      - "回归清单：受影响功能 · 验证步骤 · 预期结果"
+    gate:
+      id: gate_regression
+      criteria:
+        - "受影响功能已全覆盖（含上下游）"
+        - "历史 bug 的回归用例已纳入"
+      on_fail: "退回 test_agent"
+
+  - id: 6_review
+    agent: reviewer
+    purpose: "★ 最后一步：代码评审"
+    review_confirmation:
+      ask: "收尾时问用户一次：是否评审？要做请在本仓新开窗口（评审必须新开窗口；代码窗口不自评）"
+      on_decline: "跳过本阶段，记录「评审：跳过（用户确认）」"
+      rules: "project-dev 步骤 12.5；报告写 versions/vN/review*.md，结论回 versions/vN/CHANGELOG.md「评审」小节"
+    depends_on: [5_regression]
+    inputs:
+      - "git diff（全部改动）"
+      - "行为基线 + 等价性对照表"
+    outputs:
+      - "评审报告：结论 / 阻断项 / 建议项 / 已核对通过项 / 未审查范围"
+    gate:
+      id: gate_review
+      criteria:
+        - "无阻断项"
+        - "★ 行为等价性可被复核（对照表逐条有据）"
+        - "未触及对外契约"
+        - "无顺手夹带的行为变更（夹带了 → 打回，改走 feature）"
+        - "重构通常不记；若触及口径/契约，已在 commit message 写一行"
+        - "若改了 .claude/ 系统 → 已同步 .claude/CLAUDE.md"
+      on_fail: "打回对应阶段；夹带行为变更 → 整单打回重走 feature"
+
+quality_gates:
+  - "评审确认（review_confirmation）：收尾先问用户是否评审，用户说不做则记录跳过"
+  - "必要性成立（gate_assess）：有需求支撑，不是为重构而重构"
+  - "分步可回滚（gate_plan）"
+  - "行为等价（gate_equivalence）：★ 核心闸门，逐条对照"
+  - "回归覆盖（gate_regression）"
+  - "评审通过（gate_review）：无夹带行为变更"
+
+finalization:
+  - action: "按 CLAUDE.md §11.1：真重要变更在 commit message 写一行；普通重构不记"
+    required: true
+  - action: "若分层/边界变化 → 同步 .claude/CLAUDE.md §3/§4 + .claude/memory/architecture.md"
+    required: true
+  - action: "若命中 C 端共用文件 → 提示「需双向下发到 C 端工程」"
+    required: true
+
+# ── 本项目的重构候选（真实存在的技术债） ─────────────────────────────────
+known_refactor_candidates:
+  - id: dual_copy_infra
+    what: "services/ · composables/ · utils/ · components/app-* · common/css/ · styles/ 与 C 端是两份副本"
+    why_not_yet: "抽成真正的共享包需要跨仓库发布流程，当前收益不足"
+    note: "★ 这是已知结构债，抽包属高影响改动，必须先走 architect + 用户决策"
+  - id: admin_home_handwritten_fetch
+    what: "pages/admin-home/index.vue 的 refreshBound 是手写取数，未走 useList 形态"
+    why_not_yet: "它是「状态展示位」不是列表页，useList 的语义（分页/到底）不适用"
+    note: "若将来它有多个状态位要并行取数，可抽 composable"
+  - id: popup_flex_fix
+    what: "styles/scaffold.scss 的 .u-popup { flex: none !important } 仅在 H5 语义下确证"
+    why_not_yet: "MP 端组件有样式隔离，app.wxss 未必命中组件内部节点；且真正的 flex 子项是宿主元素"
+    note: "★ 属「未修」而非「已修」，上弹层页面前必须先在真机验一次（见 known_issues）"
+
+parallel:
+  - stages: [4_equivalence, 5_regression]
+    note: "等价性证明与回归验证可并行，但两者的结论都要进同一张对照表"
