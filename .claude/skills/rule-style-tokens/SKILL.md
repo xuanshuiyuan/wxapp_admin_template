@@ -241,7 +241,7 @@ grep -n "^\." src/common/css/main.css | head -100   # 写类名前比对
 > 下文出现的 `.claude/rules/xxx.md` 是**历史出处**，不是可读路径；需要规则正文时就地看本 skill。
 
 
-2026-10-26 从 C 端 `.claude/skills/rule-style-css` 移植**结构**（Token 全清单 / 原子类清单 /
+2026-10-26 从源工程同名 skill（旧名 `rule-style-css`）移植**结构**（Token 全清单 / 原子类清单 /
 版式块清单 / 尺度基准 / 视觉语言 五块）。
 
 ⚠️ **但原移植把 C 端的「清单正文」一起带了过来**（HUD 类名、品牌黄主色、`$color-nev-plate-*`、

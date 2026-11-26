@@ -31,7 +31,7 @@
 			<view class="glass bind__card">
 				<!-- 品牌区走**公共件**：首页冷启动的「启动判定态」用的是同一个组件 ——
 				     两屏之间只隔一次 reLaunch 整屏瞬切，品牌区是唯一"不动"的锚点，
-				     各写一份必然漂移（见 app-brand 的文件头与 modules/login/business-logic.md） -->
+				     各写一份必然漂移（见 app-brand 的文件头与 .claude/CLAUDE.md §3.3 的冷启动说明） -->
 				<app-brand title="绑定管理员账号" sub="首次使用需绑定，之后免密进入" />
 
 				<!-- 表单：手机号 + 密码。输入行是**按钮**：点一下跳通用字段编辑页输入

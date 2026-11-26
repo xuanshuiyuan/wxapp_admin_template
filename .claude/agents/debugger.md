@@ -65,7 +65,7 @@ tools: Read, Grep, Glob, Bash, Edit
 
 | 排名 | 根因类型 | 典型证据 |
 |---|---|---|
-| 1 | **环境口径搞混**（跑了 `verify:*` 却当 `build:*` 用） | `grep localhost:15200 dist/` |
+| 1 | **环境口径搞混**（跑了 `verify:*` 却当 `build:*` 用） | `grep localhost:15000 dist/` |
 | 2 | **`authRetry` / `guard` options 漏传** | 递归登录、装饰位弹阻断框 |
 | 3 | **端差异漏出**（该收进 `platform.js` 的写在了页面） | `grep -rn '#ifdef' src/pages` |
 | 4 | **跳过存储层导致真相源分裂** | 直读 `getStorageSync` |
@@ -80,7 +80,7 @@ tools: Read, Grep, Glob, Bash, Edit
 grep -rn "<关键符号>" src/ --include=*.js --include=*.vue
 grep -rn "TODO\|⚠️" src/
 grep -rn "#ifdef" src/pages src/components
-grep -rn "localhost:15200" dist/ 2>/dev/null
+grep -rn "localhost:15000" dist/ 2>/dev/null
 git log --oneline -20 -- <file>        # 看该文件最近改动
 git diff -- <file>                     # 看未提交改动
 node .claude/scripts/detect_stack.mjs  # 确认栈指纹没串

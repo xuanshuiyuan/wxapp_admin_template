@@ -56,15 +56,17 @@
 				<text class="pb__json">{{ formText }}</text>
 			</view>
 		</view>
+
+		<app-loading :mask="true" />
+		<app-modal />
 	</view>
 </template>
 
 <script setup>
 import { computed, reactive } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
 import { editField } from '@/services/fieldEditor';
 import { pickRegion } from '@/services/regionPicker';
-import { requirePageAccess } from '@/services/pageAccess';
+import { usePageGuard } from '@/composables/usePageGuard';
 import { PAGE_DEMO_B } from '@/config/access';
 
 const form = reactive({
@@ -82,10 +84,8 @@ const form = reactive({
 const regionText = computed(() => [form.province, form.city, form.district].filter(Boolean).join(' / '));
 const formText = computed(() => JSON.stringify(form, null, 2));
 
-onLoad(() => {
-	// 统一准入入口：无权时已 toast + 退回
-	requirePageAccess(PAGE_DEMO_B);
-});
+// 登录门 + 权限门统一接线（本页无首屏取数，故不传 onReady）
+usePageGuard({ path: PAGE_DEMO_B });
 
 async function onEditName() {
 	const value = await editField({

@@ -198,7 +198,7 @@ onBeforeUnmount(() => {
 
 // 操作按钮
 // 按钮间距走「取消键右外边距」而不是 `gap`：本组件是每页都渲染的基础设施件，
-// 而小程序老内核对 flex gap 支持不稳（rule-style-css 黑名单）。单按钮档（--alone）本就无间距，
+// 而小程序老内核对 flex gap 支持不稳（rule-style-tokens 的 CSS 禁忌清单）。单按钮档（--alone）本就无间距，
 // 故挂在 ghost 上——它出现时后面必有主按钮，两键等宽分配与 gap 版一致
 .app-modal__footer {
 	display: flex;

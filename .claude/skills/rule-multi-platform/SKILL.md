@@ -166,5 +166,5 @@ grep -rn "uni\.navigateTo\|uni\.switchTab\|uni\.reLaunch" src/pages src/componen
 
 提炼自 `.claude/rules/architecture.md`（§6 多端适配规则）、
 `.claude/memory/architecture.md`（§7 多端适配、§6 样式体系）、
-`.claude/rules/coding_style.md`（§4 CSS 段的安全区规则）、
+`rule-coding-basics`（安全区的两行回退规则）、
 `.claude/agents/frontend_engineer.md`（禁止事项），最后同步于 2026-10-26。

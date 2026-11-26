@@ -102,7 +102,7 @@ Agent 定义在 `.claude/agents/*.md`（标准 Claude Code 子代理格式，含
 
 | 现象 | 原因 / 处理 |
 |---|---|
-| 所有接口被拒（`40107` / `Im Invalid Request!`） | `edition` 未在后端 `EditionList` 登记 |
+| 所有接口被拒（`40003` / `Im Invalid Request!`） | `edition` 未在后端 `EditionList` 登记 |
 | 所有接口 `40003` | 签名密钥不对：`VITE_API_KEY` 与 `source` 不匹配，或时钟偏差 >300s |
 | 一直回 `40005` 并重登失败 | 登录接口本身失败（看 `services/session.js` 的 `lastLoginCode` 与后端日志） |
 | 首页入口全部隐藏 | 会话里 `permission` 为空（旧会话 / 后端未下发）→ 重新登录 |

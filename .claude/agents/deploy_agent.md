@@ -41,7 +41,7 @@ tools: Read, Grep, Glob, Bash, Write
 2. npm run build:mp-weixin       # ★ 发布构建 —— 必须是最后一条
 
 ## 产物校验
-- [ ] grep localhost:15200 dist/build/mp-weixin/  → 应为空
+- [ ] grep localhost:15000 dist/build/mp-weixin/  → 应为空
 - [ ] 产物中无 VITE_API_KEY 明文
 - [ ] appid 正确：本项目自己的 appid（对比 manifest，且不是 `REPLACE_WX_APPID`）
 
@@ -64,8 +64,8 @@ tools: Read, Grep, Glob, Bash, Write
 1. **目录由 `dev:*`/`build:*` 决定，环境由 `--mode` 决定，两轴正交。**
    `dev:*` 写 `dist/dev/`；`verify:*` 与 `build:*` **共用** `dist/build/` —— **后跑者覆盖前跑者**。
 2. **发布前必须最后跑一次 `build:*`。**
-   只跑过 `verify:*` 就上传，会把 host 指向 `localhost:15200` 的开发包发到生产。
-   **分辨只能靠 `grep localhost:15200`，别靠目录名。**
+   只跑过 `verify:*` 就上传，会把 host 指向 `localhost:15000` 的开发包发到生产。
+   **分辨只能靠 `grep localhost:15000`，别靠目录名。**
 3. **真机测试包必须来自 `npm run dev:mp-weixin` 的 `dist/dev/mp-weixin`**（development 环境）。
 
 ### 命令速查
@@ -91,7 +91,7 @@ tools: Read, Grep, Glob, Bash, Write
 5. **校产物**（只读命令）：
 
 ```bash
-grep -rn "localhost:15200" dist/build/mp-weixin/     # 应为空
+grep -rn "localhost:15000" dist/build/mp-weixin/     # 应为空
 grep -rn "VITE_API_KEY" dist/build/mp-weixin/         # 应为空（密钥不该出现在产物文本）
 cat dist/build/mp-weixin/project.config.json 2>/dev/null | grep appid
 ```

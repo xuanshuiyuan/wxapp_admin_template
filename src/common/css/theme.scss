@@ -4,7 +4,11 @@
 // ★ 来源：docs/design/c-aurora-glass/ 的两张设计稿（390×844 定稿），逐值照抄。
 //   稿内 1px = 1pt；★ 换算：rpx = pt × (750 ÷ 390) ≈ pt × 1.923。
 // ★ 栅格基数：4pt → 8rpx（所有间距/尺寸都是 8rpx 的倍数，除发丝线与字号）
-// ★ 换新项目：只改这一个文件（+ 同步 config/theme.js 的 JS 镜像），下层自动跟随
+// ★ 换新项目：只改这一个文件 + 同步下面三处（其余下层自动跟随）：
+//   ① config/theme.js          —— uview 组件的 color prop 只能传字符串
+//   ② src/pages.json           —— navigationBar / backgroundColor* 是 JSON，读不到 SCSS 变量
+//   ③ src/index.html           —— H5 首帧标题（品牌名）
+//   命令：grep -rn "#6D5BFF\|#FAFAFE" src/pages.json src/index.html
 // ★ 只允许写 SCSS 变量，禁止写任何 CSS 规则！
 //
 // ⚠️ 本文件是管理端模板的**唯一值源**：换品牌色 / 字号 / 间距只改这里

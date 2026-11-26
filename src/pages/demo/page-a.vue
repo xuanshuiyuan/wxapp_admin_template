@@ -2,7 +2,7 @@
   示例页 A · 列表页骨架（纯本地数据，不依赖后端）
 
   示范三件事：
-    ① 页面准入：onLoad 里 requirePageAccess(PAGE_DEMO_A) 一行（配置在 config/access.js 的 PAGES）；
+    ① 两道门：usePageGuard({ path: PAGE_DEMO_A, onReady: reload }) —— 登录门 + 权限门一行接线；
     ② 列表四态：useList + <app-list-state>（骨架 / 空 / 失败 / 到底），页面不自己写 v-if 链；
     ③ 接口替换点：把 fetchRows 换成 `vehicleApi.xxxList` 这类 api 方法即可，
        后端分页契约 `{ list, total, page, page_size }` 与本文件的 mock 完全一致。
@@ -44,13 +44,16 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- 全局渲染方：缺了它们，{ loading:true } 会降级成原生、守卫弹窗不会出现 -->
+		<app-loading :mask="true" />
+		<app-modal />
 	</view>
 </template>
 
 <script setup>
-import { onLoad } from '@dcloudio/uni-app';
 import { useList } from '@/composables/useList';
-import { requirePageAccess } from '@/services/pageAccess';
+import { usePageGuard } from '@/composables/usePageGuard';
 import { PAGE_DEMO_A } from '@/config/access';
 
 // —— 本地假数据（换成真实接口时整段删除）——
@@ -81,13 +84,13 @@ function fetchRows({ page, page_size }) {
 }
 
 const { items, loading, firstLoading, isEmpty, error, finished, reload } = useList(fetchRows, {
-	pageSize: 10
+	pageSize: 10,
+	// 首屏取数交给两道门（usePageGuard 的 onReady）—— 无权时不发请求
+	immediate: false
 });
 
-onLoad(() => {
-	// 统一准入入口：无权时已 toast + 退回
-	requirePageAccess(PAGE_DEMO_A);
-});
+// 登录门（onShow）+ 权限门（onLoad）统一接线；首次通过后才取数
+usePageGuard({ path: PAGE_DEMO_A, onReady: reload });
 
 /** 清空本地数据：下一次刷新即进入空态 */
 function onClear() {

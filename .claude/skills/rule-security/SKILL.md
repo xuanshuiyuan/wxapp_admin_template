@@ -120,7 +120,7 @@ git log --all --full-history -- .env.production.local                 # 应为�
 ## 发布产物
 
 ```bash
-grep -rn "localhost:15200" dist/build/<端>/    # ★ 应为空（防把开发包发到生产）
+grep -rn "localhost:15000" dist/build/<端>/    # ★ 应为空（防把开发包发到生产）
 grep -rn "VITE_API_KEY" dist/build/<端>/       # 应为空
 git status --porcelain | grep -E "\.env\.|dist/|unpackage/"   # 应为空
 cat dist/build/mp-weixin/project.config.json | grep -i appid  # 应为项目自己的 appid（不是 REPLACE_WX_APPID）
@@ -128,7 +128,7 @@ cat dist/build/mp-weixin/project.config.json | grep -i appid  # 应为项目自�
 
 ⚠️ 本工程 `services/session.js` 有 `VITE_MOCK_LOGIN_CODE` 联调通道（**只对非微信端生效**）——
 **它依赖后端仅在 local/develop 生效。前端不可假设后端一定关着它。**
-**发布前必须与后端确认该通道在生产无效**（`memory/known_issues.md` K-07）。
+**发布前必须与后端确认该通道在生产无效**（`src/config/env.js` 已有启动硬护栏，后端仍需拒绝该通道）。
 
 ❌ **不改 `manifest.json` 的 appid**。
 
@@ -153,7 +153,7 @@ cat dist/build/mp-weixin/project.config.json | grep -i appid  # 应为项目自�
 6. ❌ 改存储 key 前缀不评估与同域其它端撞前缀
 7. ❌ 用用户输入拼接口路径 / 自己拼 query
 8. ❌ `v-html` 渲染用户输入
-9. ❌ 发布产物含 `localhost:15200` 或密钥明文
+9. ❌ 发布产物含 `localhost:15000` 或密钥明文
 10. ❌ 手改 `src/uni_modules/`
 11. ❌ 错误 `msg` 里含堆栈 / SQL / 表名
 

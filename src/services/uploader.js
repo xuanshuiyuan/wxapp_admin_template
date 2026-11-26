@@ -16,17 +16,20 @@
 //   校验与失败文案都在这里，调用方只关心「成了没有」。
 // ---------------------------------------------------------------------------
 
+import { curl, isApiError } from '@/services/http';
 import { toast } from '@/services/toast';
-import { isApiError } from '@/services/http';
-import { uploadFile } from '@/api/upload';
 import { errorBrief } from '@/utils/error';
+import { ENDPOINT_ADMIN_UPLOAD } from '@/config/endpoints';
 import {
 	CODE_PARAM_INVALID,
+	CODE_UPLOAD_FORMAT_INVALID,
 	CODE_UPLOAD_INVALID,
+	CODE_UPLOAD_SIZE_INVALID,
 	CODE_UPLOAD_TOO_FREQUENT,
 	UPLOAD_ALLOWED_EXTS,
 	UPLOAD_IMAGE_EXTS,
-	UPLOAD_MAX_BYTES
+	UPLOAD_MAX_BYTES,
+	uploadTypeDef
 } from '@/config/dict';
 
 /**
@@ -65,8 +68,9 @@ function mbText(bytes) {
  * @param {{imagesOnly?:boolean,maxBytes?:number}} options
  */
 function validate(file, options = {}) {
-	const exts = options.imagesOnly ? UPLOAD_IMAGE_EXTS : UPLOAD_ALLOWED_EXTS;
-	const maxBytes = Number(options.maxBytes) > 0 ? Number(options.maxBytes) : UPLOAD_MAX_BYTES;
+	const def = uploadTypeDef(options.type);
+	const exts = options.imagesOnly ? UPLOAD_IMAGE_EXTS : (options.exts || def.exts);
+	const maxBytes = Number(options.maxBytes) > 0 ? Number(options.maxBytes) : def.maxBytes;
 	const ext = extOf(nameOf(file));
 	// H5 的 chooseImage 返回 blob: 临时路径时拿不到扩展名，但**来源只可能是图片**：
 	// 不能因此把一张合法照片拦成「格式不支持」（真格式由后端 60004 兜底）。
@@ -91,7 +95,9 @@ function uploadErrorText(e) {
 	if (isApiError(e)) {
 		const code = Number(e.code);
 		if (code === CODE_UPLOAD_TOO_FREQUENT) return '上传过于频繁，请稍后重试';
-		if (code === CODE_UPLOAD_INVALID) return '文件格式 / 大小不合法，请重新选择';
+		if (code === CODE_UPLOAD_FORMAT_INVALID) return '文件格式不支持，请重新选择';
+		if (code === CODE_UPLOAD_SIZE_INVALID) return '文件大小超出限制，请重新选择';
+		if (code === CODE_UPLOAD_INVALID) return '上传失败，请重试';
 		if (code === CODE_PARAM_INVALID) return '上传类型未注册，请联系技术处理';
 		if (e.type === 'network') return '网络异常，文件未上传，请重试';
 	}
@@ -120,7 +126,7 @@ function pickOnMP(options = {}) {
 				uni.chooseMessageFile({
 					count: 1,
 					type: 'file',
-					extension: UPLOAD_ALLOWED_EXTS,
+					extension: options.exts || UPLOAD_ALLOWED_EXTS,
 					success: (r) => resolve((r.tempFiles && r.tempFiles[0]) || null),
 					fail: () => resolve(null)
 				});
@@ -245,7 +251,7 @@ function pickByFileChooser(options = {}) {
 			uni.chooseFile({
 				count: 1,
 				type: 'all',
-				extension: UPLOAD_ALLOWED_EXTS,
+				extension: options.exts || UPLOAD_ALLOWED_EXTS,
 				success: (r) => resolve((r.tempFiles && r.tempFiles[0]) || null),
 				fail: () => resolve(null)
 			});
@@ -277,10 +283,18 @@ function fileMeta(file, url) {
 
 /** 单文件上传并返回元数据；无 url 视为失败 */
 async function uploadOne(file, type, options = {}) {
-	const body = await uploadFile(file.path, type, { loading: true, ...options });
-	const urls = (body && body.data && body.data.urls) || [];
-	if (!urls[0]) throw new Error('上传成功但没有返回文件地址');
-	return fileMeta(file, urls[0]);
+	const { loading: _ignore, ...rest } = options;
+	// 上传属于基础设施能力，直接走请求层（services 不 import api —— 见分层红线）。
+	// 响应契约：`data.url`（单个）；兼容 `data.urls[]`（多图接口的写法）。
+	const body = await curl.upload(
+		{ filePath: file.path, name: 'file', formData: { type } },
+		ENDPOINT_ADMIN_UPLOAD,
+		{ toast: false, loading: true, ...rest }
+	);
+	const data = (body && body.data) || {};
+	const url = data.url || (Array.isArray(data.urls) ? data.urls[0] : '');
+	if (!url) throw new Error('上传成功但没有返回文件地址');
+	return fileMeta(file, url);
 }
 
 /**
@@ -294,10 +308,12 @@ async function uploadOne(file, type, options = {}) {
  * @returns {Promise<{url:string,name:string,type:string,size:number}|null>}
  */
 export async function pickAndUpload(type, options = {}) {
-	const file = await pickOneFile(options);
+	const def = uploadTypeDef(type);
+	const opts = { ...def, ...options, type };
+	const file = await pickOneFile(opts);
 	if (!file) return null;
 
-	const invalid = validate(file, options);
+	const invalid = validate(file, opts);
 	if (invalid) {
 		toast(invalid);
 		return null;
@@ -362,14 +378,16 @@ async function uploadSequential(files, type, options = {}) {
  * @returns {Promise<Array<{url:string,name:string,type:string,size:number}>>} 取消 / 全失败返回 []
  */
 export async function pickAndUploadImages(type, options = {}) {
-	const picked = await pickImages(options);
+	const def = uploadTypeDef(type);
+	const opts = { ...def, ...options, type, imagesOnly: true };
+	const picked = await pickImages(opts);
 	if (!picked.length) return [];
 
 	// 逐张校验：一张不合规不连累其它张
 	const valid = [];
 	let firstInvalid = '';
 	for (const file of picked) {
-		const invalid = validate(file, { ...options, imagesOnly: true });
+		const invalid = validate(file, opts);
 		if (invalid) {
 			if (!firstInvalid) firstInvalid = invalid;
 			continue;

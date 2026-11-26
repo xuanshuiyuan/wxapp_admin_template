@@ -30,7 +30,9 @@ function resolveURL(url) {
 	if (/^https?:\/\//.test(url)) return url;
 	// 兼容带/不带前导斜杠两种写法（api/ 业务路径带、endpoints.js 不带），统一去掉再拼
 	const path = url.startsWith('/') ? url.slice(1) : url;
-	return `${rootPath}${routeVersion}/${path}`;
+	// rootPath 为空 = H5 同域部署：必须补前导斜杠，否则会相对「当前页面目录」解析
+	const base = rootPath || '/';
+	return `${base}${routeVersion}/${path}`;
 }
 
 /** 拼 GET 查询参数，数组展开为 key=v1&key=v2 */
@@ -133,11 +135,15 @@ async function sendWithPolicy(options) {
 		bail(new ApiError(ERROR_TYPE.http, `请求失败（${res.statusCode}）`, { status: res.statusCode, raw: res }), toast);
 	}
 
-	const body = res.data || {};
+	const body = res.data;
+	// 非对象（HTML 错误页 / 纯文本）不可能是统一响应：按 unknown 抛，别当成成功
+	if (!body || typeof body !== 'object' || Array.isArray(body)) {
+		bail(new ApiError(ERROR_TYPE.unknown, '响应格式异常', { raw: body }), toast);
+	}
 	// 后端 code 可能是字符串，统一按数字比较
 	const numericCode = Number(body.code);
 
-	// 无 code 字段视为成功：兼容不返回统一包装结构的接口（如第三方地址）
+	// 无 code 字段视为成功：只对**对象**放行（兼容不返回统一包装的第三方接口）
 	if (body.code === undefined || body.code === null || numericCode === CODE_SUCCESS) return body;
 
 	if (numericCode === CODE_LOGIN_EXPIRED) {

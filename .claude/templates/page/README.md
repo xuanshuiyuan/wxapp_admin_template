@@ -8,6 +8,7 @@
 |---|---|
 | `page-list.vue` | **列表页模板** —— 含分页 / 下拉刷新 / 四态编排（最常用） |
 | `page-detail.vue` | **详情页模板** —— 含首屏加载 / 单次取数 / 错误重试 |
+| `page-form.vue` | **表单页模板** —— 跳页取值 / 格式校验 / 固定底栏提交 / 两道门 |
 
 ## 使用步骤
 
@@ -18,10 +19,13 @@
    > （先 `grep -n "^\." src/common/css/main.css` 确认）。
 3. **全局替换** `__TITLE__` 为页面标题。
 4. **接上真实 api**：把 `// TODO: 换成真实 api` 处替换为 `@/api` 里的方法。
-5. **登记 `src/pages.json`** 的 `pages` 数组（第一项是启动页）。
+5. **页面路径常量**：在 `src/config/access.js` 定义 `PAGE_*` + `PAGES` 准入，再 `import` 自 `@/services/route`
+   （模板里的 `PAGE___UPPER__` / `PAGE___DETAIL__` 是占位；**页面里禁止写路径字面量**）。
+6. **两道门**：模板已接 `usePageGuard({ path, onReady })`，不要删；它同时完成登录门与权限门。
+7. **登记 `src/pages.json`** 的 `pages` 数组（第一项是启动页）。
    > 分包页另加 `subPackages` + `preloadRule`。
    > 若要加 tabBar → 必须**同步** `src/services/route.js` 的 `TAB_PAGES`。
-6. **删除** 不适用的分支（如详情页不需要下拉刷新就整块删掉，**不留死代码**）。
+8. **删除** 不适用的分支（如详情页不需要下拉刷新就整块删掉，**不留死代码**）。
 
 ## 页壳的六个必备件（**一个都不能少**）
 
@@ -31,7 +35,7 @@
 | 2 | `<app-navbar>` | 无自绘顶栏（高度含状态栏、让位微信胶囊） |
 | 3 | `<app-loading :show>`（局部） | 首屏无 loading |
 | 4 | **`<app-loading :mask>`（不带 `show`）** | ★ 请求层 `{ loading:true }` **静默降级**成原生 `uni.showLoading`，样式不符（BUG-003） |
-| 5 | **`<app-modal />`** | ★ `pushModal` 什么都不弹，且滞留队列会在**切页后才冒出**（BUG-004） |
+| 5 | **`<app-modal />`** | ★ `pushModal` 什么都不弹，且滞留队列会在**切页后才冒出**（真实事故：漏挂 `<app-modal>` 时守卫弹窗不出现） |
 | 6 | `<app-refresher>` + `scroll-view` 的 `refresher-*` 接线 | 下拉三段态无指示器 |
 
 ## 页面里**禁止**出现
@@ -77,7 +81,7 @@
    —— 它**自己骑在下拉空档里**
 5. ★ **页面没有自绘导航栏时，必须给 `app-refresher` 传 `:top`（= 滚动区上沿 y 坐标）**
    —— 骨架里不带 `:top` 是「顶部有 `app-navbar`」的写法；无导航栏的页面下拉空档开在
-   `y=0`，指示器会落进 **iPhone 灵动岛**的物理遮挡区（2026-10-26 真机踩过，BUG-007）。
+   `y=0`，指示器会落进 **iPhone 灵动岛**的物理遮挡区（真机踩过：下拉指示器落进灵动岛）。
    正解：页壳顶部加透明状态栏让位块（`height = layout.statusBarHeight`）+ 同值传 `:top`
 
 > 📖 完整流程（含表单页骨架与 `u-form` 三个坑）见 `.claude/skills/rule-add-page/`。

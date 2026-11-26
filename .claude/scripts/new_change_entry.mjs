@@ -225,7 +225,7 @@ if (type === '业务逻辑变更' || type === 'API变更') {
 	console.log('        · 若走了 project-dev：还需产出 .claude/project-meta/versions/vN/');
 	console.log('          （一次改动的全貌：需求原文 + 否掉的方案 + 改了哪些 block）');
 	console.log('        · 接口契约真源 = src/config/endpoints.js + src/config/dict.js（代码即真源）');
-	console.log('        · memory/business_rules.md 与 api_conventions.md 只是【指针】，不用改正文');
+	console.log('        · 业务规则正文只写 project-meta/modules/<模块>/business-logic.md');
 
 	// ★ CLAUDE.md §6.2 的两条强制覆盖（project-dev 模板的缺口）
 	if (v === '—') {

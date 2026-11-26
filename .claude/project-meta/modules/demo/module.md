@@ -21,12 +21,13 @@
 | `src/pages/admin-home/index.vue` | 工作台：按权限渲染入口、子菜单弹层、冷启动判定态 |
 | `src/pages/demo/list.vue` | 请求示例 + 上传示例 + 权限点展示 |
 | `src/pages/demo/page-a.vue` | 列表页骨架（本地 mock 数据，四态演示） |
+| `src/composables/usePageGuard.js` | 两道门统一接线（所有页面，含模板） |
 | `src/pages/demo/page-b.vue` | 表单行 + 字段编辑 / 地区选择（跳页取值） |
 | `src/pages/bind/index.vue` | 绑定页 stub（演示模式直接成功） |
 | `src/config/demo.js` | 演示会话（token / admin_info / permission） |
 | `src/config/access.js` | `HOME_ENTRIES` / `DEMO_SUBMENU_ENTRIES` / `PAGES` |
 | `src/api/demo.js` | 连通性自测接口（后端 demo 模块，可选） |
-| `src/services/uploader.js` + `src/api/upload.js` | 上传链路 |
+| `src/services/uploader.js` | 上传链路（直接走 `curl.upload`；services 不 import api） |
 
 ## 后端路径
 

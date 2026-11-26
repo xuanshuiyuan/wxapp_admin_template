@@ -24,9 +24,10 @@ export function toQueryString(data) {
 		.filter(key => data[key] !== undefined && data[key] !== null)
 		.map(key => {
 			const value = data[key]
-			// 数组按 qs 风格序列化：key[0]=v1&key[1]=v2
+			// 数组一律逗号串（与 utils/qs.js 的 joinIdsParam 同口径）：
+			// 后端表单解码器不认 `key[]=` / `key[0]=`，会直接回 40001
 			if (Array.isArray(value)) {
-				return value.map((item, index) => `${encodeURIComponent(key)}[${index}]=${encodeURIComponent(item)}`).join('&')
+				return `${encodeURIComponent(key)}=${encodeURIComponent(value.join(','))}`
 			}
 			return `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
 		})

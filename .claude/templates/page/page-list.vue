@@ -85,8 +85,10 @@
 
 <script setup>
 import { useList } from '@/composables/useList';
+import { usePageGuard } from '@/composables/usePageGuard';
 import { usePullRefresh } from '@/composables/usePullRefresh';
-import { route } from '@/services/route';
+// ⚠️ 页面路径只能从 services/route 引（常量定义在 config/access.js）；先在 access.js 加 PAGE_* 再转出
+import { route, PAGE___UPPER__, PAGE___DETAIL__ } from '@/services/route';
 // TODO: 换成真实 api（必须在 src/config/endpoints.js 先登记 URL，再在 src/api/<域>.js 包方法）
 // import { __DOMAIN__Api } from '@/api';
 
@@ -111,9 +113,14 @@ const {
 		// 每次请求前取最新筛选条件（响应式取值放这里，不要闭包提前取）
 		params: () => ({
 			// keyword: keyword.value
-		})
+		}),
+		// 首屏取数交给两道门（usePageGuard 的 onReady）—— 无权时不发请求
+		immediate: false
 	}
 );
+
+// ★ 两道门（登录门 + 权限门）统一入口：新页面必须接，否则 H5 深链/分享直达会先渲染再靠 40102 兜底
+usePageGuard({ path: PAGE___UPPER__, onReady: reload });
 
 // 下拉三段态 + 「最后更新」时刻全在公共件里，页面只给取数函数与在飞判重
 const {
@@ -132,7 +139,8 @@ const {
 
 /** 点击列表项：跳详情。跳页用 route.to（保留页栈语义由 route 统一决定） */
 function onItemTap(item) {
-	route.to('/pages/__DETAIL__/index', { id: item.id });
+	// ⚠️ 不要写路径字面量：详情页路径同样先在 access.js 定义 PAGE_* 再从 route 引
+	route.to(PAGE___DETAIL__, { id: item.id });
 }
 </script>
 

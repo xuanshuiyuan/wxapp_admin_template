@@ -9,17 +9,11 @@
 // 当前运行端（mp / h5 / app）由条件编译自动判定，与 env 无关。
 // ---------------------------------------------------------------------------
 
+// 当前运行端：端判定的唯一处（config/runtime.js，避免 env/platform 各写一份 #ifdef）
+import { RUNTIME } from '@/config/runtime';
+
 // ── 环境名 ──
 const ENV = import.meta.env.VITE_APP_ENV || 'development';
-
-// ── 当前运行端（条件编译） ──
-let runtime = 'mp';
-// #ifdef H5
-runtime = 'h5';
-// #endif
-// #ifdef APP-PLUS
-runtime = 'app';
-// #endif
 
 // ── 按端取接口地址 ──
 const HOST_MAP = {
@@ -33,7 +27,7 @@ export const env = ENV;
 export const isProd = ENV === 'production';
 // 统一补尾斜杠：request.js 在其后直接拼版本前缀（v2/），不依赖 .env 里手写斜杠；
 // 留空（H5 同域部署）时保持空串，走相对路径
-const host = HOST_MAP[runtime] || '';
+const host = HOST_MAP[RUNTIME] || '';
 export const rootPath = host && !host.endsWith('/') ? `${host}/` : host;
 export const ossHost = import.meta.env.VITE_OSS_HOST || '';
 export const apiKey = import.meta.env.VITE_API_KEY || '';
@@ -51,3 +45,8 @@ export const developBypass = import.meta.env.VITE_DEVELOP_BYPASS || '';
 // 非微信端（H5 调试）登录用的联调 mock code：真实后端模式下，H5 拿不到微信 code。
 // 留空时非微信端登录会明确报错，而不是拿假身份进入。生产必须留空。
 export const mockLoginCode = import.meta.env.VITE_MOCK_LOGIN_CODE || '';
+
+// 硬护栏：生产环境出现联调 mock code 时启动即失败（不依赖文档自觉）
+if (isProd && mockLoginCode) {
+	throw new Error('生产构建禁止 VITE_MOCK_LOGIN_CODE（非微信端会拿假身份进入）');
+}

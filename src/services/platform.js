@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------------------
 // 多端差异适配层。页面里禁止出现 #ifdef —— 需要区分端时调这里。
+// 端**判定**在 config/runtime.js（唯一条件编译点），本文件只做能力分档与实现。
 // 当前保证 微信小程序 / H5 / App 三端，其余小程序端按 mp 分支处理。
 //
 // 只保留通用能力（布局 / 滚动锁 / 拨号 / 复制 / 文档预览 / 相机 / 扫码 / 版本更新 /
@@ -7,21 +8,39 @@
 // ---------------------------------------------------------------------------
 
 import { withLoading, toast } from '@/services/toast';
-import { rootPath } from '@/config/env';
+import { rootPath, mockLoginCode } from '@/config/env';
+// 端判定只有一处（config/runtime.js）；本文件只做「端能力分档」
+import { RUNTIME, isMP, isH5, isApp } from '@/config/runtime';
 
-let runtime = 'mp';
-// #ifdef H5
-runtime = 'h5';
-// #endif
-// #ifdef APP-PLUS
-runtime = 'app';
-// #endif
+export { RUNTIME, isMP, isH5, isApp };
 
-/** 当前运行端：'mp' | 'h5' | 'app' */
-export const RUNTIME = runtime;
-export const isMP = runtime === 'mp';
-export const isH5 = runtime === 'h5';
-export const isApp = runtime === 'app';
+/**
+ * 取一次登录凭证 code —— 端差异的**唯一**收口处。
+ *   微信小程序：`uni.login` 换一次性 code（重复消费后端回 60003，调用方需换新 code 重试）；
+ *   其余端    ：用 `.env` 的联调 mock code（生产留空，env.js 有启动硬护栏）。
+ * 失败（未配置 mock code / uni.login 失败）直接 reject，由调用方决定提示。
+ * @returns {Promise<string>}
+ */
+export function getLoginCode() {
+	return new Promise((resolve, reject) => {
+		// #ifdef MP-WEIXIN
+		uni.login({
+			provider: 'weixin',
+			success: (res) => resolve(res.code),
+			fail: reject
+		});
+		return;
+		// #endif
+		// #ifndef MP-WEIXIN
+		// 非微信端拿不到真 code，只能走联调通道；未配置时**明确报错**而不是拿假身份进入
+		if (!mockLoginCode) {
+			reject(new Error('非微信端未配置 VITE_MOCK_LOGIN_CODE（见 .env.development 注释）'));
+			return;
+		}
+		resolve(mockLoginCode);
+		// #endif
+	});
+}
 
 let layout = null;
 

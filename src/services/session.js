@@ -24,7 +24,7 @@ import { writeSession, clearSession, isLogin, getPermission } from '@/services/s
 import { syncUser, resetUser } from '@/store/user';
 import { route, PAGE_BIND } from '@/services/route';
 import { toast } from '@/services/toast';
-import { mockLoginCode } from '@/config/env';
+import { getLoginCode } from '@/services/platform';
 import { DEMO_MODE } from '@/config/app';
 import { DEMO_SESSION } from '@/config/demo';
 import { CODE_ADMIN_NOT_BOUND, CODE_WX_UNAVAILABLE } from '@/config/dict';
@@ -40,28 +40,11 @@ function codeOf(e) {
 }
 
 /**
- * 取得登录凭证：微信小程序用 uni.login 换 code（一次性，重复消费后端回 60003），
- * 其他端用联调 mock code。端差异只允许写在这类适配函数里，页面代码不出现 #ifdef。
+ * 取得登录凭证：端差异（wx.login / 联调 mock code）收在 services/platform.js 的 getLoginCode。
  * @returns {Promise<{code: string}>}
  */
-function getLoginCredential() {
-	return new Promise((resolve, reject) => {
-		// #ifdef MP-WEIXIN
-		uni.login({
-			provider: 'weixin',
-			success: res => resolve({ code: res.code }),
-			fail: reject
-		});
-		// #endif
-		// #ifndef MP-WEIXIN
-		// 非微信端拿不到真 code，只能走联调通道；未配置时**明确报错**而不是拿假身份进入
-		if (!mockLoginCode) {
-			reject(new Error('非微信端未配置 VITE_MOCK_LOGIN_CODE（见 .env.development 注释）'));
-			return;
-		}
-		resolve({ code: mockLoginCode });
-		// #endif
-	});
+async function getLoginCredential() {
+	return { code: await getLoginCode() };
 }
 
 /**

@@ -26,7 +26,8 @@ npm run dev:mp-weixin     # 微信开发者工具导入 dist/dev/mp-weixin
 npm run dev:h5            # 浏览器
 ```
 
-此时首页按 `config/demo.js` 的演示权限渲染菜单，绑定页任意账号 + 6 位以上密码即可进入。
+此时首页按 `config/demo.js` 的演示权限渲染菜单，绑定页任意账号 + 6 位以上密码即可进入
+（仅当 `.env.development` 的 `VITE_DEMO_MODE=true`；生产默认 false）。
 
 ### REPLACE_* 占位清单（上线前必须全部替换）
 
@@ -80,7 +81,7 @@ src/
     demo.js       演示会话（DEMO_MODE=true 时使用）
     region-code.js 省市区表（可选，region-picker 消费）
     theme.js      theme.scss 的 JS 镜像（u-icon color 这类 prop 用）
-  composables/    useList · useModal · usePullRefresh · useServerClock · useAdminHome
+  composables/    useList · useModal · usePullRefresh · useServerClock · useAdminHome · usePageGuard
   components/     app-*（easycom 免 import）：brand / modal / loading / navbar / refresher /
                   skeleton / list-state / form-row / bottom-bar / uploader
   pages/
@@ -175,22 +176,43 @@ const visibleActions = computed(() => byPermission(ACTIONS, permission.value)); 
 
 ## 4. 演示模式与接真后端
 
-`src/config/app.js` 的 `DEMO_MODE`：
+`DEMO_MODE` 由**环境变量**驱动（`VITE_DEMO_MODE`，**不允许硬编码**）：
 
-| | `true`（默认） | `false` |
+| | `.env.development` = `true` | `.env.production` = `false` |
 |---|---|---|
 | 登录 | 不请求网络，写入 `config/demo.js` 的会话 | `admin/login/login` |
 | 绑定 | 任意账号 + 6 位密码 | `admin/login/bind` |
 | 首页数据 | 本地会话（权限点 + 管理员信息） | 同上（本模板不依赖首页接口） |
-| 用途 | 无后端时跑通权限菜单 / 页面准入 / 上传之外的一切前端机制 | 真实联调 |
+| 防护 | — | 生产若误开 `VITE_DEMO_MODE=true`，**启动即抛错**；`npm run check:release` 也会拦 |
 
 切换步骤：
 
 1. 按下一节完成后端 RBAC 登录 / 绑定；
 2. 填 `.env.*.local` 的 `VITE_API_KEY`；
-3. 把 `DEMO_MODE` 改为 `false`；
+3. 确认 `.env.production` 的 `VITE_DEMO_MODE=false`（不要用 `.env.production.local` 覆盖成 true）；
 4. 用真实权限码替换 `config/dict.js` 的 `PERM_DEMO_*` 与 `config/access.js` 的入口 / `PAGES`；
-5. 删掉 `api/demo.js` 与 `pages/demo/list.vue` 的「请求示例」区块（或留作自测）。
+5. 按 §4.1「去演示化」删除演示页 / 会话 / 接口，然后跑 `npm run check:release`。
+
+### 4.1 去演示化清单（发布前必须做完）
+
+```bash
+# 1) 删演示页面与会话/接口
+rm -rf src/pages/demo
+rm -f src/config/demo.js src/api/demo.js
+
+# 2) pages.json 里删掉三个 demo 页面条目（pages/demo/list、page-a、page-b）
+# 3) config/access.js：删掉 DEMO_* 导入、DEMO_SUBMENU_ENTRIES、DEMO_PAGE_ACTIONS、
+#    三个 HOME_ENTRIES 演示项中的 demo 项、PAGES 里三条 demo 准入
+# 4) services/session.js：删掉 DEMO_SESSION 导入与演示分支（DEMO_MODE 相关）
+# 5) config/dict.js：删掉 PERM_DEMO_*、UPLOAD_TYPE_DEMO_FILE 与 UPLOAD_TYPE_DEFS 里的 demo 项
+# 6) config/endpoints.js：删掉 ENDPOINT_DEMO_*
+# 7) api/index.js：删掉 demo 导出
+# 8) 自检
+npm run verify:mp-weixin && npm run check:release
+```
+
+> 第 3–6 步也可以保留（`DEMO_MODE=false` 时它们不生效），但 `check:release` 会因
+> `pages.json` 仍有 demo 页而拦下 —— 演示代码不进生产包是硬口径。
 
 ---
 
@@ -233,8 +255,18 @@ const visibleActions = computed(() => byPermission(ACTIONS, permission.value)); 
 ### 5.3 上传
 
 后端只建一个上传口（建议 `POST /admin/upload`），业务类型由 `type` 声明：
-`conf.AdminUploadTypes` 里注册（目录 + 格式白名单 + 大小上限），前端 `type` 传同一个键。
-前端链路已就绪：`<app-uploader v-model="files" type="demo_file" />`。
+`conf.AdminUploadTypes` 里注册（目录 + 格式白名单 + 大小上限），前端 `type` 传同一个键
+（前端在 `config/dict.js` 的 `UPLOAD_TYPE_DEFS` 镜像同一份白名单 / 限额）。
+
+**响应契约**（新项目必须按此返回；后端模板尚未实现该控制器）：
+
+```json
+{ "code": 0, "msg": "ok", "data": { "url": "https://oss.example.com/demo_file/xxx.png" } }
+```
+
+前端兼容 `data.urls[0]`（多图接口写法），但**以 `data.url` 为准**。
+失败码按 `40203`（格式）/ `40204`（大小）/ `40205`（频控）/ `40001`（类型未注册）/ `60004`（通用）分档。
+前端链路：`<app-uploader v-model="files" type="demo_file" />`。
 
 ### 5.4 连通性自测（可选）
 
@@ -258,6 +290,7 @@ npm install
 npm run verify:mp-weixin    # 用 development 环境配置构建（产物在 dist/build/mp-weixin）
 npm run verify:h5
 npm run build:mp-weixin     # 发布产物（production 配置）
+npm run check:release       # 发布闸门：占位 / 演示代码 / 联调旁路 / host 一致性（必须通过才能发）
 ```
 
 模板交付前的验证结论记录在 `.claude/context/current_sprint.md`；未跑过的项写「未执行，待验证」。

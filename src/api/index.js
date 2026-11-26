@@ -12,5 +12,4 @@
 //    由 services/session.js 直接调（见其注释「why」）。
 // ---------------------------------------------------------------------------
 
-export { uploadApi, uploadFile } from './upload';
 export { demoApi } from './demo';

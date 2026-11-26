@@ -43,6 +43,8 @@ export const CODE_ACCOUNT_DISABLED = 50008;
 export const CODE_WX_UNAVAILABLE = 60003;
 // 验签 / 版本 / 来源被拒（后端 verification.go fail-closed）
 export const CODE_SIGN_INVALID = 40003;
+// ⚠️ 预留号段：后端当前对 edition 未登记返回 CodeValidationFailed(40003)+通用文案，
+//    40107 只在后端 `err_code.go` 预留、尚未接线；不要把它当已生效的契约。
 export const CODE_EDITION_INVALID = 40107;
 
 // 绑定频控倒计时秒数：与后端窗口必须一致
@@ -80,8 +82,27 @@ export const UPLOAD_IMAGE_EXTS = ['jpg', 'jpeg', 'png'];
 export const UPLOAD_MAX_BYTES = 20 * 1024 * 1024; // 20MB
 
 // 上传失败码（services/uploader.js 按场景给文案）
+// 契约真源：后端 internal/conf/err_code.go —— 40203 格式错误 / 40204 大小超限 /
+// 40205 频控 / 60004 上传通用失败。类型未注册在后端由未来控制器映射（本模板按 40001 处理）。
+export const CODE_UPLOAD_FORMAT_INVALID = 40203;
+export const CODE_UPLOAD_SIZE_INVALID = 40204;
 export const CODE_UPLOAD_INVALID = 60004;
 export const CODE_UPLOAD_TOO_FREQUENT = CODE_TOO_FREQUENT;
+
+/**
+ * 按类型收敛的上传定义（镜像后端 conf.AdminUploadTypes 的 FormatList / MaxSize）。
+ * 新增一种上传：后端注册表加一行 + 这里加一行（键必须与后端 type 完全一致）。
+ * 调用方可用 options 覆盖单项（如履约附件临时严格要求 imagesOnly）。
+ * @type {Record<string, {exts: string[], maxBytes: number, imagesOnly: boolean}>}
+ */
+export const UPLOAD_TYPE_DEFS = {
+	[UPLOAD_TYPE_DEMO_FILE]: { exts: UPLOAD_ALLOWED_EXTS, maxBytes: UPLOAD_MAX_BYTES, imagesOnly: false }
+};
+
+/** 取某类型的上传定义（未注册的 type 回落到 demo_file 的全局默认，便于联调时先跑通） */
+export function uploadTypeDef(type) {
+	return UPLOAD_TYPE_DEFS[type] || UPLOAD_TYPE_DEFS[UPLOAD_TYPE_DEMO_FILE];
+}
 
 // —— 身份域（如你的后端有平台 / 商家两类管理员，可沿用；模板默认不启用） ——
 export const ADMIN_SCOPE_PLATFORM = 1;

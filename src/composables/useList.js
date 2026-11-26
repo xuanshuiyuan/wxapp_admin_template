@@ -66,12 +66,20 @@ export function useList(fetcher, config = {}) {
 	const refreshing = ref(false);
 	const error = ref('');
 	const finished = ref(false);
+	// 在飞期间被丢弃的「重新加载」请求：当前请求结束后补拉第一页。
+	// 不加它的话，用户改完筛选立刻点搜索、而上一页还在飞时，这次操作会被静默丢弃，
+	// 列表停留在旧条件的数据上（用户以为搜索没生效）。
+	let pendingReload = false;
 
 	const isEmpty = computed(() => !loading.value && !error.value && items.value.length === 0);
 	const firstLoading = computed(() => loading.value && items.value.length === 0);
 
 	async function fetchPage(targetPage) {
-		if (loading.value) return;
+		if (loading.value) {
+			// 只排队「回到第一页」的请求；翻页请求在飞时本来就该被忽略
+			if (targetPage <= 1) pendingReload = true;
+			return;
+		}
 		loading.value = true;
 		error.value = '';
 		try {
@@ -92,6 +100,11 @@ export function useList(fetcher, config = {}) {
 			if (refreshing.value) {
 				refreshing.value = false;
 				uni.stopPullDownRefresh();
+			}
+			// 在飞期间被丢弃的 reload：补一次（只补一次，避免高频点击无限重拉）
+			if (pendingReload) {
+				pendingReload = false;
+				fetchPage(1);
 			}
 		}
 	}

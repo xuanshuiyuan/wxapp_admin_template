@@ -81,7 +81,7 @@ security_agent 逐一评估本次改动里所有 guard: false 的使用点：
 ```
 security_agent 发布前扫描：
 1. VITE_API_KEY 是否出现在 src/ 或产物里
-2. grep localhost:15200 dist/ 是否为空
+2. grep localhost:15000 dist/ 是否为空
 3. .env.*.local / dist/ / unpackage/ 是否被误提交
 4. 有无明文 http:// 请求地址
 5. 错误 msg 是否含内部结构（堆栈/SQL/表名）

@@ -140,6 +140,8 @@ export const HOME_ENTRIES = [
 	{
 		// ★ 权限隐藏示例：配置里有，但演示会话不下发 PERM_DEMO_HIDDEN → 永远不渲染。
 		//   在 config/demo.js 的 permission 里加上它，首页立刻多出这张卡。
+		//   ⚠️ 本卡落点 PAGE_DEMO_A 还需要 `PERM_DEMO_PAGE_A` 才进得去；验证显隐时
+		//      请在原有权限基础上**追加** HIDDEN（不要只留 HIDDEN，否则点进去会被权限门退回）。
 		type: MODULE_TYPE_DEMO,
 		name: '权限隐藏示例',
 		code: PERM_DEMO_HIDDEN,

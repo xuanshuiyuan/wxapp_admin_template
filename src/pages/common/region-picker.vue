@@ -61,6 +61,10 @@
 
 			<text class="version">{{ APP_VERSION_TEXT }}</text>
 		</view>
+
+		<!-- 全局渲染方（工具页同样要挂：守卫弹窗/loading 都可能由跳转前的页面触发后滞留到本页） -->
+		<app-loading :mask="true" />
+		<app-modal />
 	</view>
 </template>
 
@@ -68,6 +72,8 @@
 import { computed, ref } from 'vue';
 import { onLoad, onReady, onUnload } from '@dcloudio/uni-app';
 import { emitRegionResult } from '@/services/regionPicker';
+import { usePageGuard } from '@/composables/usePageGuard';
+import { PAGE_REGION_PICKER } from '@/config/access';
 import { APP_VERSION_TEXT } from '@/config/app';
 import { PROVINCE_CITY_DISTRICTS_CODE } from '@/config/region-code';
 import { safeDecodeURIComponent } from '@/utils/text';
@@ -187,6 +193,9 @@ function locate(query) {
 
 	idx.value = [pi, ci, di];
 }
+
+// 工具页也走统一入口：PAGES 里 login:false 且无 entries → 两道门都是空操作
+usePageGuard({ path: PAGE_REGION_PICKER });
 
 onLoad((options) => {
 	const o = options || {};

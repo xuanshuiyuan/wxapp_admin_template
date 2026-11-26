@@ -65,7 +65,8 @@ fi
 
 echo "$file_list" | while read -r file; do
   [ -f "$file" ] || continue
-  if grep -q "$old_project_name" "$file" 2>/dev/null; then
+  # -I：二进制文件（如 src/static/*.png）一律跳过，避免 sed 破坏图片
+  if grep -Iq "$old_project_name" "$file" 2>/dev/null; then
     sedi "s|$old_project_name|$project_name|g" "$file"
   fi
 done
@@ -95,13 +96,11 @@ if [ -n "$oss_host" ]; then
   echo "已写入 OSS 域名: $oss_host"
 fi
 
-# 3. 校验（依赖已安装时）
-if [ -d node_modules ] && command -v npm >/dev/null 2>&1; then
-  echo "正在校验编译（npm run verify:mp-weixin）…"
-  npm run verify:mp-weixin >/dev/null 2>&1 && echo "编译通过" || echo "⚠️ 编译未通过，请手工跑 npm run verify:mp-weixin 查看原因"
-else
-  echo "（未安装依赖，跳过编译校验；先 npm install）"
-fi
+# 3. 不做自动构建：
+#    构建会留下 dist/build 产物（development 配置），容易被误当发布包上传 ——
+#    正是「开发域名发生产」的源头。需要验证请显式运行：
+#      npm install && npm run verify:mp-weixin
+echo "（未自动构建。验证用：npm install && npm run verify:mp-weixin）"
 
 echo ""
 echo "============================================================"
@@ -113,5 +112,5 @@ echo "  2. 填 .env.*.local 的 VITE_API_KEY（向后端线下领取，按 sourc
 echo "  3. grep -rn 'REPLACE_' .  --exclude-dir=node_modules"
 echo "  4. src/config/app.js：APP_NAME / APP_VERSION / edition（后端 EditionList 已登记的值）"
 echo "  5. src/config/demo.js + config/access.js：删掉演示权限点，换成你的真实权限码"
-echo "  6. 接真后端后把 config/app.js 的 DEMO_MODE 改为 false"
+echo "  6. .env.production 的 VITE_DEMO_MODE 必须为 false；发布前跑 npm run check:release"
 echo "============================================================"

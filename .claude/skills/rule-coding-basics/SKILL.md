@@ -116,7 +116,7 @@ description: 在本项目写任何代码时用：定命名（文件/变量/组�
 - 样式值 → `common/css/theme.scss`（SCSS 变量）+ `config/theme.js`（JS 镜像）。
   **禁止硬编码色值/字号/间距**（详见 `rule-style-tokens`）。
 
-## 文件与模块（2026-11-16 从 `rules/coding_style.md` 迁入）
+## 文件与模块（2026-11-16 从源工程 `rules/coding_style.md` 迁入）
 
 - **一个文件一个主要导出**（组件 / service 模块 / 纯函数集合）—— 多个主要导出会让「这段代码属于哪一层」失去判据。
 - ❌ **禁止 barrel 文件层层转发**：`index.js` 只做出口汇总、不写逻辑 —— 层层 re-export 会掩盖真实依赖，
@@ -133,7 +133,7 @@ description: 在本项目写任何代码时用：定命名（文件/变量/组�
 ## 来源
 
 移植自 C 端工程 `.claude/skills/rule-coding-basics/SKILL.md`（2026-10-26）。
-C 端原版迁入自其 `.claude/rules/coding_style.md` 全量 + `rules/scaffold-musts.md` §9。
+源工程原版迁入自其 coding_style 全量 + scaffold-musts §9（已随业务剥离）。
 本次适配：指针改指本工程的 `rule-layering` / `rule-api-registry` / `rule-style-tokens` / `templates/page/`；
 补入本工程实测的格式口径（Tab / 单引号 / 带分号 / 无 ESLint）与「什么样的 why 值得写」表。
 规则文档更新后，重新跑一遍 `project-skill-manager` 的 RULES-TO-SKILLS 流程来同步。

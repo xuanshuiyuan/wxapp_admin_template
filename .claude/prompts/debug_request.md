@@ -75,12 +75,12 @@
 ### 2.5 环境口径问题（本项目高频）
 
 ```
-【现象】上传到微信的包，接口指向 localhost:15200。
+【现象】上传到微信的包，接口指向 localhost:15000。
 
 【要求】
 1. 根因（不是"忘了跑 build"，要具体到哪一步导致的）
 2. 给出预防措施（这次不只是一次性修复）
-3. 检查 .claude/memory/bug_history.md 的 BUG-005 是否已记录同类问题
+3. 检查 `.claude/memory/known_issues.md` 是否已记录同类问题
 ```
 
 ---
@@ -150,7 +150,7 @@
 
 | 排名 | 根因类型 | 取证命令 |
 |---|---|---|
-| 1 | 环境口径搞混 | `grep -rn "localhost:15200" dist/` |
+| 1 | 环境口径搞混 | `grep -rn "localhost:15000" dist/` |
 | 2 | `options` 漏传（`authRetry` / `guard`） | `grep -rn "authRetry\|guard:" src/` |
 | 3 | 端差异漏出（`#ifdef` 在页面里） | `grep -rn "#ifdef" src/pages src/components` |
 | 4 | 绕过存储层导致真相源分裂 | `grep -rn "getStorageSync" src/ \| grep -v services/storage.js` |

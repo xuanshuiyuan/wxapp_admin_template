@@ -10,6 +10,7 @@
 		"build:h5": "SASS_LEGACY_JS_API=silence uni build -p h5",
 		"verify:mp-weixin": "SASS_LEGACY_JS_API=silence uni build -p mp-weixin --mode development",
 		"verify:h5": "SASS_LEGACY_JS_API=silence uni build -p h5 --mode development",
+		"check:release": "node .claude/scripts/check_release.mjs",
 		"dev:prod:mp-weixin": "SASS_LEGACY_JS_API=silence uni -p mp-weixin --mode production",
 		"dev:prod:h5": "SASS_LEGACY_JS_API=silence uni -p h5 --mode production"
 	},

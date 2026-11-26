@@ -83,14 +83,17 @@
 				</text>
 			</view>
 		</view>
+
+		<app-loading :mask="true" />
+		<app-modal />
 	</view>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
 import { getPermission } from '@/services/storage';
-import { byPermission, requirePageAccess } from '@/services/pageAccess';
+import { byPermission } from '@/services/pageAccess';
+import { usePageGuard } from '@/composables/usePageGuard';
 import { isApiError } from '@/services/http';
 import { toast } from '@/services/toast';
 import { demoApi } from '@/api';
@@ -109,10 +112,8 @@ const files = ref([]);
 const requestState = ref('');
 const resultText = ref('');
 
-onLoad(() => {
-	// 统一准入入口：无权时已 toast + 退回，这里直接停止初始化
-	if (!requirePageAccess(PAGE_DEMO).allowed) return;
-});
+// 登录门 + 权限门统一接线（本页无首屏取数，数据由按钮触发）
+usePageGuard({ path: PAGE_DEMO });
 
 /** 把响应压成可读的一小段（演示用，真实业务不要整包打印响应体） */
 function showResult(label, body) {

@@ -156,7 +156,7 @@ finalization:
 
 # ── 本项目高频根因速查（debugger 起手清单） ───────────────────────────────
 known_root_cause_patterns:
-  - "环境口径搞混：跑了 verify:* 却当 build:* 用 → grep localhost:15200 dist/"
+  - "环境口径搞混：跑了 verify:* 却当 build:* 用 → grep localhost:15000 dist/"
   - "options 漏传：authRetry:false（递归登录）/ guard:false（装饰位弹阻断框）"
   - "端差异漏出：该收进 services/platform.js 的 #ifdef 写在了页面"
   - "绕过存储层：直读 getStorageSync 导致真相源分裂"

@@ -21,7 +21,7 @@ tools: Read, Grep, Glob, Write, Edit
 
 - `api_designer` 的契约表与签名（**没有契约就不动手**，先要契约）。
 - `architect` 的 ADR（分层落点）。
-- `.claude/skills/rule-layering/` + `coding_style.md`。
+- `.claude/skills/rule-layering/` + `.claude/skills/rule-coding-basics/`。
 - 现网同类实现（**必须实读一份对照**，照抄其 why 注释风格）。
 
 ## 输出

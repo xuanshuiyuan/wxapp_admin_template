@@ -31,7 +31,8 @@ export function removeItem(name) {
  *     （C 端是 `user_info.user_id`）——**`userid` 请求头就取它**，取错会 40102/40005
  *   · 管理端**不下发 openid**（管理端是独立小程序，微信身份只用于查绑定记录）
  *   · 本地存储键名 `userinfo` 沿用不改（内部标识，改名会让旧缓存登录态失效）；
- *     整份 `admin_info` 原样存进去，`role_names` 等首页才有的字段由首页接口现取，不入存储
+ *     整份 `admin_info` **原样存进去**（含 `role_names` 等展示字段）；
+ *     若后端另有首页接口返回更新鲜的 `admin_info`，页面以接口值为准覆盖展示（存储仍以登录响应为准）
  * @param {object} resData 登录 / 绑定接口的 data 层（两个接口结构完全相同）
  */
 export function writeSession(resData) {

@@ -140,10 +140,10 @@ onUnload(() => resetLoading());   // ★ 页面卸载兜底
 ### 3) 路由：路径集中，空栈有兜底
 
 ```js
-import { route, PAGE_ADMIN_HOME, PAGE_BIND, PAGE_LEDGER_LIST, PAGE_LEDGER_SEARCH,
-	PAGE_LEDGER_DETAIL, TAB_PAGES } from '@/services/route';
+import { route, PAGE_ADMIN_HOME, PAGE_BIND, PAGE_DEMO, PAGE_DEMO_A,
+	PAGE_FIELD_EDITOR, TAB_PAGES } from '@/services/route';
 
-route.to(PAGE_LEDGER_DETAIL, { type, order_no });  // 压栈；命中 TAB_PAGES 自动改用 switchTab
+route.to(PAGE_DEMO_A, { id });                     // 压栈；命中 TAB_PAGES 自动改用 switchTab
 route.redirect(SOME_PAGE, { id });           // 关闭当前页再跳（上一页使命已尽时用）
 route.tab(PAGE_ADMIN_HOME);                        // 显式回 tabBar 页
 route.relaunch();                            // 关闭所有页面（默认 PAGE_ADMIN_HOME）

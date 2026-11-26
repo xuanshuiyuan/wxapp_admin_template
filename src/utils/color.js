@@ -2,7 +2,7 @@
 // 颜色纯函数工具（2026-10-19 v1.0.12 新建）。
 //
 // 为什么需要它：本项目的环图一律走 `conic-gradient` + 内孔盘挖空（小程序端无 SVG、
-// canvas 三端口径不一，见 rule-style-css），而 `conic-gradient` **只能内联拼色串** ——
+// canvas 三端口径不一，见 rule-style-tokens），而 `conic-gradient` **只能内联拼色串** ——
 // 于是色值必须从 JS 侧拿。`theme.scss` 的 `rgba($token, alpha)` 在 JS 里拼不出来，
 // 只能拿 `config/theme.js` 镜像的 hex 再自己套 alpha。
 //

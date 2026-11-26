@@ -208,7 +208,7 @@ try {
 
 提炼自 `.claude/rules/architecture.md`（§3.2 请求链路、§3.3 统一 API 返回格式）、
 `.claude/memory/architecture.md`（§3 请求链路、§4 登录态）、
-`.claude/memory/api_conventions.md`（§1 请求约定、§2 响应约定、§4 options 约定）、
+源工程的 api_conventions（请求 / 响应 / options 约定，已随业务剥离）、
 `.claude/rules/security.md`（§5 注入与输入污染），最后同步于 2026-11-16
 （2026-10-26 首次提炼；2026-11-04 复核日志管理页的手机号明文例外；
 2026-11-05 复核用户管理页的同款例外；2026-11-06 复核车辆列表 / 车源列表两页的同款例外；

@@ -75,8 +75,9 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { onLoad } from '@dcloudio/uni-app';
+import { usePageGuard } from '@/composables/usePageGuard';
 import { usePullRefresh } from '@/composables/usePullRefresh';
+import { PAGE___UPPER__ } from '@/services/route';
 import { isApiError } from '@/services/http';
 // TODO: 换成真实 api
 // import { __DOMAIN__Api } from '@/api';
@@ -129,9 +130,13 @@ const {
 	onTouchMove
 } = usePullRefresh({ onRefresh: load });
 
-onLoad((options) => {
-	detailId = (options && options.id) || '';
-	load();
+// ★ 两道门（登录门 + 权限门）统一入口；onReady 拿到 onLoad 的 query
+usePageGuard({
+	path: PAGE___UPPER__,
+	onReady: (options) => {
+		detailId = (options && options.id) || '';
+		load();
+	}
 });
 </script>
 

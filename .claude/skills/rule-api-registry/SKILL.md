@@ -117,7 +117,8 @@ export const CODE_ADMIN_NO_ROLE = 58004;        // 未配置角色权限
 `CODE_LOGIN_EXPIRED`(40005) · `CODE_NO_PERMISSION`(40102) · `CODE_TOO_FREQUENT`(40205) ·
 `CODE_ACCOUNT_DISABLED`(50008) · `CODE_ADMIN_NOT_BOUND`(58001) · `CODE_BIND_CREDENTIAL_ERROR`(58002) ·
 `CODE_BIND_RATE_LIMITED`(58003) · `CODE_ADMIN_NO_ROLE`(58004) · `CODE_WX_UNAVAILABLE`(60003) ·
-`CODE_UPLOAD_INVALID`(60004) · `CODE_SIGN_INVALID`(40003) · `CODE_EDITION_INVALID`(40107)
+`CODE_UPLOAD_INVALID`(60004) · `CODE_UPLOAD_FORMAT_INVALID`(40203) · `CODE_UPLOAD_SIZE_INVALID`(40204) ·
+`CODE_SIGN_INVALID`(40003) · `CODE_EDITION_INVALID`(40107，预留：edition 未登记当前回 40003)
 
 **同文件里的非错误码登记**：权限码 `PERM_DEMO_*` · 模块类型 `MODULE_TYPE_*` ·
 上传类型 `UPLOAD_TYPE_DEMO_FILE` · 频控窗口 `BIND_COOLDOWN_SECONDS`。
@@ -134,6 +135,6 @@ export const CODE_ADMIN_NO_ROLE = 58004;        // 未配置角色权限
 > 下文出现的 `.claude/rules/xxx.md` 是**历史出处**，不是可读路径；需要规则正文时就地看本 skill。
 
 
-来源：源工程 `.claude/memory/api_conventions.md`（URL 拼接 / 错误码字典 / 契约落地流程）与
-`rules/architecture.md`（统一 API 返回格式）、`rules/coding_style.md`（常量与枚举不写字面量）。
+来源：源工程的 api_conventions / architecture / coding_style（已随业务剥离）；
+现行约定以本 skill 与 `.claude/CLAUDE.md` 为准。
 最后同步 2026-11-26（随业务剥离替换为模板现有登记）。

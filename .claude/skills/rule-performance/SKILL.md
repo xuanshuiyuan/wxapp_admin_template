@@ -7,10 +7,11 @@ description: 在本工程做性能相关改动时用：长列表/大数据渲染
 
 本工程的性能约定。**第一原则：不要过早优化** —— 先有可观测症状与测量数据，再动手。
 
-> 📌 **来源**：源工程同名 skill（已随本次抽离去业务化），
-> 移植时**剔除了 C 端业务实例**（多车轮询 / 天气 / 定位），
-> 去重三件套改为从本工程共用的 `services/location.js` 与 `useList` 提炼，
-> 并新增了本工程特有的「做缓存前先问的三问」。
+
+> 移植时**剔除了源工程业务实例**（轮询 / 天气 / 定位）。
+> ⚠️ **模板现成实现只有两处**：`services/session.js` 的 `login()`（同 key 单飞）与
+> `http/guard.js`（同码动作去重）；`useList` 只做分页，**没有** SWR / 规范 key 归一。
+> 三件套是「新项目按需实现」的机制说明，不要把「文档写了」当成「代码已有」。
 
 ## 硬性禁令（MUST / MUST NOT）
 
@@ -159,7 +160,8 @@ description: 在本工程做性能相关改动时用：长列表/大数据渲染
 移植自 C 端工程 `.claude/skills/rule-performance/SKILL.md`（2026-10-26）。
 C 端原版迁入自其 `.claude/rules/performance.md` 全量，2026-09-22 新增去重三件套。
 本次适配：**剔除 C 端业务实例**（`useVehiclePolling` / `useWeather` / 定位轮询），
-去重三件套的现成实现改列本工程共用的 `session.js` / `guard.js` / `useList` / `usePullRefresh`；
+去重三件套**机制**保留，但现成实现只有 `session.js`（单飞）/ `guard.js`（动作去重）/ `usePullRefresh`（在飞判重），
+`useList` 不含 SWR —— 原表述「从 useList 提炼」已纠正；
 新增「先测量再优化」与「做缓存前三问」（本工程特有的防过度设计）；
 剔除已不适用的小程序特定条目（本工程无 tabBar / 无分包）。
 

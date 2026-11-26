@@ -76,7 +76,7 @@
 
 ```
 页面层    pages/             只做：调 api、渲染、反馈（收事件 → 调什么 → 渲染什么）
-复用层    composables/       把一个能力封成 hook（useList / useModal / useAdminHome）
+复用层    composables/       把一个能力封成 hook（useList / useModal / useAdminHome / usePageGuard）
 接口层    api/               业务域名词 → HTTP（demoApi.list）
 基础层    services/          http(签名/传输/重登/错误) · session · route · storage
                              · toast · platform · guards · pageAccess · pickPage
@@ -121,6 +121,9 @@ api/<域>.js  →  curl.get / post / upload
    **首屏页 `onShow`** 负责（无 token 自动补 + `40005` 自动重登重放），用户无感。
 2. **不是「登录即注册」**：后端不为新微信建账号，没绑过回 `58001`
    —— 那是**流程分支不是错误** → 清栈跳 `pages/bind`（手机号 + 密码绑定）。
+   > ⚠️ `58001–58006` 是**模板建议给新项目自建 RBAC 的码**，不是后端模板既有契约
+   > （`go_project_template` 的 `err_code.go` 里没有这一段）。新项目自建登录/绑定时
+   > 可以沿用、也可以换成自己的号段；换的话同步 `config/dict.js` + `services/session.js` + `guards.js`。
 3. 绑定成功**不必再调登录接口**（绑定响应与登录完全相同）。
 4. **没有独立登录页**：登录是静默的，绑定页承接首次使用。
 5. 会话结构是 `admin_info`（身份主键 `admin_info.id` = `userid` 头）；
@@ -134,6 +137,8 @@ api/<域>.js  →  curl.get / post / upload
    把那次整屏瞬切伪装成「启动画面 → 请你绑定」。
 8. **两道门**：`requireAdminLogin()`（登录门，`onShow`，是否执行由 `PAGES.login` 决定）
    → `requirePageAccess(path, query)`（权限门，`onLoad` 一行）。
+   页面的标准写法是**一行** `usePageGuard({ path, onReady })`（`composables/usePageGuard.js`），
+   它同时完成两道门与首次取数；手写等价语义时不要漏任何一道。
    配置只有一处 `src/config/access.js`，判据只有一处 `src/services/pageAccess.js`。
 9. **演示模式**（`DEMO_MODE=true`）下以上链路照常运行，只是登录/绑定不请求网络。
 
@@ -163,6 +168,8 @@ config/theme.js         theme.scss 的 JS 镜像（给 uview 组件 color prop �
 ```
 
 **换主色 / 字号 / 间距只改 `theme.scss` 一个文件**（+ 同步 `config/theme.js` 镜像）。
+⚠️ 还有两处**读不到 SCSS 变量**的同步点：`src/pages.json` 各页的 `backgroundColor*` 与
+`src/index.html` 的标题/主题色 —— 它们是 JSON/HTML，只能各留一份字面量（见 theme.scss 头部同步清单）。
 
 **两种页面口径**：
 

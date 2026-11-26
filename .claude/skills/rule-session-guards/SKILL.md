@@ -1,6 +1,6 @@
 ---
 name: rule-session-guards
-description: 当代码需要读/写登录态、判断是否已登录（或本地会话是否够用）、需要页面级登录拦截与权限门、或需要处理账号受限状态（账号已被禁用 / 未配置角色权限）时使用。也用于「新增一个业务码要在全局做动作」这类需求。提供登录态与全局守卫机制的用法；业务规则细节见 project-meta/modules/login/business-logic.md。
+description: 当代码需要读/写登录态、判断是否已登录（或本地会话是否够用）、需要页面级登录拦截与权限门、或需要处理账号受限状态（账号已被禁用 / 未配置角色权限）时使用。也用于「新增一个业务码要在全局做动作」这类需求。提供登录态与全局守卫机制的用法；业务规则细节见 project-meta/modules/<模块>/business-logic.md。
 ---
 
 # rule-session-guards
@@ -9,7 +9,7 @@ description: 当代码需要读/写登录态、判断是否已登录（或本地
 
 > ⚠️ **边界**：本 skill 讲**机制怎么用**（基础设施）。
 > 「管理端一阶段登录 + 首次绑定分支的规则」「哪个码触发什么动作」是**业务规则** →
-> 见 `.claude/project-meta/modules/login/business-logic.md`。
+> 见 `.claude/project-meta/modules/<模块>/business-logic.md`。
 
 ## 登录态读写（唯一入口）
 
@@ -28,21 +28,25 @@ description: 当代码需要读/写登录态、判断是否已登录（或本地
 页面不再自己拼权限码数组，也不再各写一遍「配置 ∩ 权限点」的过滤（那写法曾是 3 处副本）。
 
 ```js
+// ★ 首选：两道门一行接线（登录门 onShow + 权限门 onLoad + 首次取数）
+import { usePageGuard } from '@/composables/usePageGuard';
+usePageGuard({ path: PAGE_DEMO, onReady: refreshAll });
+
+// 需要手写时（等价语义，不要漏任何一道）：
 import { sessionReady, requireAdminLogin } from '@/services/session';
 import { requirePageAccess, byPermission, pageNeedsLogin } from '@/services/pageAccess';
-import { PAGE_LEDGER_LIST, LEDGER_ENTRIES } from '@/config/access';
+import { PAGE_DEMO, DEMO_SUBMENU_ENTRIES } from '@/config/access';
 
 // ① 登录门（页面 onShow）：**跑不跑由配置决定**（access.js 的 PAGES[path].login）
-//    未绑定（58001）由 requireAdminLogin 内部清栈跳绑定页；其余失败不抛、返回 false
-if (pageNeedsLogin(PAGE_LEDGER_LIST) && !(await requireAdminLogin())) return;
+if (pageNeedsLogin(PAGE_DEMO) && !(await requireAdminLogin())) return;
 
-// ② 权限门 + 取「本页有权限加载的配置」（页面 onLoad 一行）
-//    无权则内部 toast + route.back()（空栈回落首页）；'unresolved' 是参数问题，不跳页、由页面给空态
-const access = requirePageAccess(PAGE_LEDGER_LIST, query);
-if (!access.allowed) return;                 // access.entries = 本页配置 ∩ 权限点，给页内续用
+// ② 权限门（页面 onLoad 一行）：无权则内部 toast + route.back()；
+//    'unresolved' 是参数问题，不跳页、由页面给空态
+const access = requirePageAccess(PAGE_DEMO, query);
+if (!access.allowed) return;
 
-// ③ 页内 tab / 按钮显隐：同一口径的**唯一实现**（首页宫格 / 页内 tab / 页内按钮共用）
-const tabs = byPermission(LEDGER_ENTRIES, permission.value);  // ⚠️ 响应式场景**必须显式传 ref 的值**
+// ③ 页内 tab / 按钮显隐：同一口径的**唯一实现**
+const tabs = byPermission(DEMO_SUBMENU_ENTRIES, permission.value);  // ⚠️ 响应式场景**必须显式传 ref 的值**
 
 // ④ 同步判据（零网络）：本地会话够不够用 —— 只有需要**第一帧**就决定渲染什么时才用
 const ok = sessionReady();                  // isLogin() && 权限点已取到

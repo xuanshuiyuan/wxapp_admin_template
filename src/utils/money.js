@@ -42,7 +42,7 @@ export function formatFen(fen, withSymbol = true) {
  * 分 → 展示文本；字段缺失给「—」。
  *
  * 为什么缺失不兜成 0：账户摘要里「0 元」与「还没取到」是两种事实，
- * 兜 0 会让运营以为这个账户真的没钱（见 rules/coding_style.md §3.3）。
+ * 兜 0 会让运营以为这个账户真的没钱（见 .claude/skills/rule-coding-basics 的「缺值 vs 0」口径）。
  *
  * @param {number|string|null|undefined} fen 整数分
  * @returns {string}

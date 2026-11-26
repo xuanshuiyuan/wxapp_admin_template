@@ -109,7 +109,7 @@ stages:
         1. 目录由 dev:*/build:* 决定，环境由 --mode 决定，两轴正交。
            verify:* 与 build:* 共用 dist/build/，后跑者覆盖前跑者。
         2. 发布前必须最后跑一次 build:*。只跑过 verify:* 就上传，
-           会把 host 指向 localhost:15200 的开发包发到生产。
+           会把 host 指向 localhost:15000 的开发包发到生产。
         3. 真机测试包必须来自 npm run dev:mp-weixin 的 dist/dev/mp-weixin。
 
   - id: 4_artifact_check
@@ -121,7 +121,9 @@ stages:
     gate:
       id: gate_artifact_check
       criteria:
-        - "grep localhost:15200 dist/build/<端>/ → 为空（★ 最关键的一条）"
+        - "grep localhost / 127.0.0.1 dist/build/<端>/ → 为空（★ 最关键的一条）"
+        - "npm run check:release 通过（DEMO_MODE / 联调旁路 / 占位 / 演示 token / host 一致性，可执行闸门）"
+        - "src/pages.json 不含 pages/demo（演示代码已剥离，README §4.1）"
         - "产物中无 VITE_API_KEY 明文"
         - "appid = 本项目自己的 appid（对比 manifest / project.config.json，且不是 REPLACE_WX_APPID）"
         - "无遗留 console.log 调试残留（关键路径）"
@@ -161,7 +163,7 @@ quality_gates:
   - "评审前置（preconditions）：★ 未评审通过不许发布"
   - "安全扫描（gate_security_scan）：无严重/高风险"
   - "构建口径（gate_build）：最后一条是 build:*，用户已确认"
-  - "产物校验（gate_artifact_check）：★ 无 localhost:15200"
+  - "产物校验（gate_artifact_check）：★ 无 localhost:15000"
   - "发布评审（gate_release_review）：含可执行回滚方案"
 
 # ── 放行之后（人工执行，不由 agent 编排） ─────────────────────────────────

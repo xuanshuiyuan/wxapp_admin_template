@@ -22,11 +22,11 @@
 1. **目录由 `dev:*`/`build:*` 决定，环境由 `--mode` 决定，两轴正交。**
    `dev:*` 写 `dist/dev/`；**`verify:*` 与 `build:*` 共用 `dist/build/` —— 后跑者覆盖前跑者**。
 2. **发布前必须最后跑一次 `build:*`。**
-   只跑过 `verify:*` 就上传，会把 host 指向 `localhost:15200` 的开发包发到生产。
-   **分辨只能靠 `grep localhost:15200`，别靠目录名。**
+   只跑过 `verify:*` 就上传，会把 host 指向 `localhost:15000` 的开发包发到生产。
+   **分辨只能靠 `grep localhost:15000`，别靠目录名。**
 3. **真机测试包必须来自 `npm run dev:mp-weixin`**（development 环境）。
 
-> 背景：这三条是 C 端工程踩坑后带过来的（见 `memory/bug_history.md` BUG-005）。
+> 背景：这三条是 C 端工程踩坑后带过来的（源工程发布事故的教训）。
 
 ---
 
@@ -121,7 +121,7 @@ grep -rn "class=\"<你的类名>\"" src/components
 ### 3.4 产物与环境自查（发布前）
 
 ```bash
-grep -rn "localhost:15200" dist/build/mp-weixin/     # ★ 应为空
+grep -rn "localhost:15000" dist/build/mp-weixin/     # ★ 应为空
 grep -rn "VITE_API_KEY" dist/build/mp-weixin/        # 应为空
 cat dist/build/mp-weixin/project.config.json | grep -i appid   # 应为本项目自己的 appid（与 manifest 一致）
 ```

@@ -101,7 +101,7 @@ grep -rnE "\b(40005|40102|50008|5800[1-6]|60003)\b" src/pages src/components
 | B8 | 是否重造了已有能力（`useList` / `useModal` / `usePullRefresh` / `platform` / `storage` / `toast` / `endpoints` / `dict`） | 重造 → 阻断 |
 | B9 | 同一能力是否出现 ≥3 次重复 | 是 → 必须抽取 |
 | B10 | 是否 catch 后静默吞异常（`return null` / `{}` / 空 catch） | 是 → 阻断 |
-| B11 | 每页是否挂了不带 `show` 的 `<app-loading>` 与一个 `<app-modal>` | 漏 → 静默降级 / 弹窗不弹（BUG-003/004） |
+| B11 | 每页是否挂了不带 `show` 的 `<app-loading>` 与一个 `<app-modal>` | 漏 → 静默降级 / 弹窗不弹（真实事故：漏挂全局组件） |
 | B12 | 是否改了 C 端共用目录（`services/` `composables/` `utils/` `components/app-*` `common/css/` `styles/`） | 改了 → 已评估是否需双向下发？ |
 | B13 | 列表页能进子页改数据时，是否接 `refreshOnReturn` + `dirtyKey`，且子页**写成功后** `markListDirty` | 漏标脏 → 返回吃旧快照；无条件 reload → 列表整体替换闪一下（v1.2.2 口径）。结构级部分已由 `check_system.mjs` 第 ⑨ 条拦截，「写成功后」这一步仍需人工看 |
 | B14 | 是否在页面里自己补 loading 延时 / 最短驻留（`setTimeout` 包 `showLoading` 等） | 有 → 阻断：上屏节奏统一在 `services/toast.js`（延迟 200ms / 最短 300ms） |

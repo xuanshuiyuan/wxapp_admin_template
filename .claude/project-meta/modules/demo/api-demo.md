@@ -23,7 +23,8 @@
 | 码 | 含义 | 本模板处置 |
 |---|---|---|
 | `40003` | 签名 / source / 时间戳不合法 | 提示后端 msg；检查 `VITE_API_KEY` / `source` / 时钟 |
-| `40107` | edition 未登记 | 检查 `config/app.js` 的 `edition` 与后端 `EditionList` |
+| `40003` | edition 未登记（与签名失败同码，看文案 / 后端日志区分） | 检查 `config/app.js` 的 `edition` 与后端 `EditionList` |
+| `40107` | **预留**，当前后端不会返回 | 不要按它写分支 |
 | `40005` | 登录失效 | http 层自动重登重放；重登失败抛 `ApiError(type='auth')` |
 | `40102` | 无权限 | 页面就地提示 / 空态，**不进全局守卫** |
 

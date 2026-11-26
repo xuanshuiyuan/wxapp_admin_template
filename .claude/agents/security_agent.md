@@ -55,7 +55,7 @@ grep -rn "uni\.request\|uni\.uploadFile" src/ | grep -v "services/http/transport
 grep -rn "#ifdef\|#ifndef" src/pages src/components               # 端差异漏出
 grep -rn "http://" src/                                            # 明文 http
 git status --porcelain | grep -E "\.env\.|dist/|unpackage/"       # 误提交
-grep -rn "localhost:15200" dist/ 2>/dev/null                       # 产物环境（若有 dist）
+grep -rn "localhost:15000" dist/ 2>/dev/null                       # 产物环境（若有 dist）
 ```
 
 2. **判定敏感信息**：任何「能定位到真实用户」的数据（手机号、token、openid、user_id、

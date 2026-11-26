@@ -4,7 +4,7 @@
 > 完整流程见 `.claude/workflows/release.yaml`。
 >
 > ⚠️ **本清单的第 4 节（产物校验）是本项目最不可省的部分** ——
-> 历史上把开发包发到生产就是漏了这一步（见 `memory/bug_history.md` BUG-005）。
+> 历史上把开发包发到生产就是漏了这一步（见本文件第 4 节的产物校验）。
 
 ---
 
@@ -17,7 +17,7 @@
 | 1.3 | 本次发布内的**真重要变更**已在 commit message 记录（CHANGELOG 已冻结，见 §11.1） | ☐ | 重要变更无记录 = 发布未完成 |
 | 1.4 | `.env.production.local` 的 `VITE_API_KEY` 已就位 | ☐ | ⚠️ **换机器 / 他人 clone 必须另行向后端领取**，否则产物签不出合法请求（K-04） |
 | 1.5 | 本次若改了 `config/app.js` 的 `edition` / `source` → **后端已登记新值** | ☐ | ⚠️ 未登记的值会被后端 **fail-closed** 拒（`Im Invalid Request!`），且是**全局**协商头（K-02/K-03） |
-| 1.6 | **与后端确认 `VITE_MOCK_LOGIN_CODE` 联调通道在生产无效** | ☐ | ⚠️ 若生效 = 越权风险（K-07） |
+| 1.6 | **与后端确认 `VITE_MOCK_LOGIN_CODE` 联调通道在生产无效** | ☐ | ⚠️ 若生效 = 越权风险（`src/config/env.js` 已加启动硬护栏，仍要确认后端也拒绝） |
 | 1.7 | 回滚方案已准备好（**不能事后补**） | ☐ | |
 
 ---
@@ -51,8 +51,8 @@ grep -rn "#ifdef\|#ifndef" src/pages src/components
    `dev:*` 写 `dist/dev/`；`verify:*` 与 `build:*` **共用** `dist/build/`
    —— **后跑者覆盖前跑者**。
 2. **发布前必须最后跑一次 `build:*`。**
-   只跑过 `verify:*` 就上传，会把 host 指向 `localhost:15200` 的开发包发到生产。
-   **分辨只能靠 `grep localhost:15200`，别靠目录名。**
+   只跑过 `verify:*` 就上传，会把 host 指向 `localhost:15000` 的开发包发到生产。
+   **分辨只能靠 `grep localhost:15000`，别靠目录名。**
 3. **真机测试包必须来自 `npm run dev:mp-weixin` 的 `dist/dev/mp-weixin`**（development 环境）。
 
 ### 命令顺序
@@ -79,7 +79,7 @@ npm run build:h5              # ② ★ 最后一条
 
 ```bash
 # 4.1 ★ 最关键：产物不得指向开发环境
-grep -rn "localhost:15200" dist/build/mp-weixin/
+grep -rn "localhost:15000" dist/build/mp-weixin/
 # → 期望：【无输出】
 
 # 4.2 产物中不得有密钥明文
@@ -91,15 +91,19 @@ cat dist/build/mp-weixin/project.config.json 2>/dev/null | grep -i appid
 # → 期望：本项目自己的 appid（与 src/manifest.json 一致，且不是 REPLACE_WX_APPID）
 
 # 4.4 产物指向生产域名
-grep -rn "REPLACE_API_BASE_URL\|localhost:" dist/build/mp-weixin/ | head -3
-# → 期望：为空（既没有未替换的占位，也没有 localhost）
-grep -rn "https://" dist/build/mp-weixin/ | head -3
-# → 期望：指向本项目生产域名
+# ★ 一条命令替代手工 grep（DEMO_MODE / 联调旁路 / 占位 / 演示 token / host 一致性）
+npm run check:release
+# → 期望：✅ 发布产物体检通过；任何一项不满足即退出码 1
+
+grep -rn "localhost\|127.0.0.1" dist/build/mp-weixin/ | head -3
+# → 期望：为空（开发域名不能进生产）
+grep -rn "REPLACE_" dist/build/mp-weixin/ | head -3
+# → 期望：为空（占位已替换）
 ```
 
 | # | 检查 | 期望 | 过? |
 |---|---|---|---|
-| 4.1 | `grep localhost:15200` | **无输出** | ☐ |
+| 4.1 | `grep localhost:15000` | **无输出** | ☐ |
 | 4.2 | 无密钥明文 | 无输出 | ☐ |
 | 4.3 | appid | 与 `src/manifest.json` 一致且不是 `REPLACE_WX_APPID` | ☐ |
 | 4.4 | 生产域名 | 指向生产 | ☐ |
@@ -161,7 +165,7 @@ grep -rn "https://" dist/build/mp-weixin/ | head -3
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| K-07 `VITE_MOCK_LOGIN_CODE` 在生产是否无效 | ⚠️ 未确证 | **发布前必须与后端确认** |
+| `VITE_MOCK_LOGIN_CODE` 在生产是否无效 | 前端已有启动硬护栏 | 后端仍需确认拒绝该通道 |
 | K-08 `.u-popup` 修复在 MP 端是否有效 | ⚠️ **未确证** | 仅 H5 语义下验过；**上弹层页面前必须真机验** |
 | K-09 真机行为整体未验证 | ⚠️ 未确证 | 管理端 appid / 域名下未做全量真机验证 |
 

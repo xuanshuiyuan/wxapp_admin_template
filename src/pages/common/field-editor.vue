@@ -129,6 +129,8 @@
 <script setup>
 import { ref } from 'vue';
 import { onLoad, onReady, onUnload } from '@dcloudio/uni-app';
+import { usePageGuard } from '@/composables/usePageGuard';
+import { PAGE_FIELD_EDITOR } from '@/config/access';
 import { consumeFieldValue, emitFieldResult } from '@/services/fieldEditor';
 import { route } from '@/services/route';
 import { toast } from '@/services/toast';
@@ -149,6 +151,9 @@ const pwdVisible = ref(false);
 
 // 是否已回传：确认后 onUnload 不再补发「放弃」，否则会覆盖刚回传的结果
 let emitted = false;
+
+// 工具页也走统一入口：PAGES 里 login:false 且无 entries → 两道门都是空操作
+usePageGuard({ path: PAGE_FIELD_EDITOR });
 
 onLoad((query) => {
 	const q = query || {};

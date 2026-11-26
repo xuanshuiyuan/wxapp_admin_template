@@ -84,7 +84,7 @@
 2. security_agent 无严重/高风险
 3. 真重要变更已在 commit message 记录（CHANGELOG 已冻结）
 4. 构建命令序列最后一条是 build:mp-weixin
-5. grep localhost:15200 dist/build/mp-weixin/ 为空
+5. grep localhost:15000 dist/build/mp-weixin/ 为空
 6. 给出回滚方案
 
 ⚠️ 执行任何构建命令前先告诉我你要跑什么。

@@ -93,9 +93,12 @@ description: 在本工程新增页面、新界面、新业务模块页，或要�
    替代：跑 `node .claude/scripts/check_system.mjs`（静态自检，含路由一致性）。
 
 > ★ **进页与页内显隐的三句话**（配置驱动，详见 `rule-session-guards`）：
-> · `onLoad`：`const access = requirePageAccess(PAGE_XXX_LIST, query); if (!access.allowed) { blocked = true; return }`
->   （`byParam` 型页面要**先**校验参数与类型是否本版认识，再调它 —— 参数问题不该被当成权限问题踢回上一页）
-> · 取数前：`if (pageNeedsLogin(PAGE_XXX_LIST) && !(await requireAdminLogin())) { …置失败态; return }`
+> · **首选一行接线**：`usePageGuard({ path: PAGE_XXX_LIST, onReady: reload })`
+>   —— 内部完成「onLoad 权限门 + onShow 登录门 + 首次取数」，新页面**必须**接；
+> · 手写等价语义（不要在项目里另造第三套）：
+>   `onLoad` 里 `const access = requirePageAccess(PAGE_XXX_LIST, query); if (!access.allowed) return;`
+>   （`byParam` 型页面要**先**校验参数与类型是否本版认识 —— 参数问题不该被当成权限问题踢回上一页）；
+>   取数前 `if (pageNeedsLogin(PAGE_XXX_LIST) && !(await requireAdminLogin())) return;`
 > · 页内 tab / 按钮：`byPermission(清单, permission.value)`
 >   —— **不要自己写 `.filter(x => codes.includes(x.code))`**，那是这条口径的唯一实现
 
@@ -219,7 +222,7 @@ function setFilter(v) {
    （原生回弹会溢出遮盖）—— 它**自己骑在下拉空档里**，钉住不动的写法会让空档还浅时
    指示器与内容挤在一起。
 5. ★ **页面没有自绘导航栏时，必须给 `app-refresher` 传 `:top`，值与「滚动区上沿 y 坐标」
-   一致**（2026-10-26 真机踩过，见 `memory/bug_history.md` BUG-007）。
+   一致**（真机踩过：下拉指示器落进灵动岛）。
    上面骨架里的 `<app-refresher … />` **不带 `:top`** —— 那是「顶部有 `app-navbar`」的写法，
    组件默认取 `getLayout().customBarHeight`，正好等于栏内滚动区的上沿。
    **没有导航栏的页面（如首页的极光头部）**：滚动区从屏幕顶端开始，下拉空档就开在 y=0，
@@ -372,7 +375,7 @@ async function submit() {
   局部 `app-loading :show`、**全局 `app-loading`（不带 `show`）**、**`app-modal`**、`app-refresher`（B 档）。
   漏了全局 loading → 请求 loading **静默降级**成原生 `uni.showLoading`（样式不符、不报错）；
   漏了 `app-modal` → `pushModal` 什么都不弹，且**滞留队列会在切页后才突然冒出**。
-  （见 `memory/bug_history.md` BUG-003 / BUG-004）
+  （真实事故：漏挂全局组件时 loading 降级、守卫弹窗不出现）
 - ⚠️ **`pages.json` 必须登记新页**（第一项是启动页）；
   将来加 tabBar 必须**两处同步**：`pages.json` 的 `tabBar` 段 + `services/route.js` 的 `TAB_PAGES`
   —— 漏改后者会让 `route.to` 用 `navigateTo` 跳 tab 页而**失败**。

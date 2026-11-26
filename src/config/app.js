@@ -7,7 +7,7 @@
 
 // edition 头：接口版本协商值（后端 route/verification.go 按白名单校验）。
 // ⚠️ 这是**全局**协商头，动一次全项目所有接口一起变；传**未登记**的值会被后端
-// fail-closed 整体拒绝（HTTP 200 + 业务码 40107 / `Im Invalid Request!`）。
+// fail-closed 整体拒绝（HTTP 200 + 业务码 **40003** / `Im Invalid Request!`）。
 // 后端模板 EditionList 的起点是 v1.0.0（=100），新项目按自己后端的登记值填。
 export const edition = 'v1.0.0';
 
@@ -55,14 +55,21 @@ export function storageKey(name) {
 }
 
 // ---------------------------------------------------------------------------
-// ★ 演示模式（模板自带，接真后端前保持 true）
+// ★ 演示模式（由环境变量驱动，**不允许硬编码**）
 //
-// true  —— 登录 / 绑定**不请求网络**：services/session.js 直接把 config/demo.js 的
-//          演示会话写进本地存储（含 permission），于是：
-//            · 权限菜单（config/access.js ∩ permission）可以完整跑通；
-//            · 页面准入 / 40102 处置 / 登录门都能在开发者工具里验证；
-//            · 首页不发 admin/home/index（没有后端也能看到工作台）。
-// false —— 走真实契约：wx.login → admin/login/login，失败 58001 → 绑定页。
-// ⚠️ 切到 false 之前必须先完成 README 的「后端对接指引」（登录接口 + 权限下发）。
+// 取值：`VITE_DEMO_MODE === 'true'`
+//   · `.env.development` 设 true —— 登录/绑定不请求网络，直接写 config/demo.js 的演示会话，
+//     权限菜单 / 页面准入 / 子菜单规则可在无后端时完整验证；
+//   · `.env.production` 设 false（且不得为 true）—— 走真实契约 wx.login → admin/login/login。
+//
+// ⚠️ 为什么必须走环境变量：硬编码 true 时，团队 clone 后填完域名直接 build，
+//    就会得到一个「任意手机号 + 任意 6 位密码即可进入」的生产包 —— 这是真实鉴权旁路。
+// ⚠️ 生产环境若误开（VITE_APP_ENV=production 且 VITE_DEMO_MODE=true）启动即抛错，
+//    宁可起不来，也不让演示登录进生产。
+// ⚠️ 去演示化（删除 demo 页 / 会话 / 接口）的清单见 README §4.1；发布检查会拦截残留。
 // ---------------------------------------------------------------------------
-export const DEMO_MODE = true;
+export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
+
+if (DEMO_MODE && import.meta.env.VITE_APP_ENV === 'production') {
+	throw new Error('生产构建禁止 VITE_DEMO_MODE=true（演示登录会让任意密码进入系统）');
+}
